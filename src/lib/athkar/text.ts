@@ -1,0 +1,44 @@
+const DIACRITICS = /[ؐ-ًؚ-ٰٟۖ-ۭـ]/g;
+
+/** Removes harakat, shadda, sukun, Quranic marks and tatweel. */
+export function stripDiacritics(text: string): string {
+  return text.replace(DIACRITICS, "");
+}
+
+/** Canonical form for matching: no diacritics, unified letters, single spaces. */
+export function normalizeArabic(text: string): string {
+  return stripDiacritics(text.normalize("NFKC"))
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export type SegmentKind = "plain" | "quran" | "hadith";
+
+export interface TextSegment {
+  readonly kind: SegmentKind;
+  readonly text: string;
+}
+
+const MARKERS = /﴿([^﴾]*)﴾|\(\(([\s\S]*?)\)\)/g;
+
+/** Splits zekr text into plain, Quran (﴿…﴾) and hadith ((…)) segments. */
+export function segmentText(text: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  let cursor = 0;
+  const push = (kind: SegmentKind, value: string) => {
+    if (value.trim().length > 0) segments.push({ kind, text: value });
+  };
+
+  for (const match of text.matchAll(MARKERS)) {
+    const start = match.index ?? 0;
+    push("plain", text.slice(cursor, start));
+    if (match[1] !== undefined) push("quran", match[1]);
+    else push("hadith", match[2] ?? "");
+    cursor = start + match[0].length;
+  }
+  push("plain", text.slice(cursor));
+  return segments;
+}
