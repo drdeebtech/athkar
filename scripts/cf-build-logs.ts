@@ -10,7 +10,7 @@
  * macOS from the Keychain item "athkar-cloudflare-builds". Never commit it.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const API = "https://api.cloudflare.com/client/v4";
@@ -76,6 +76,13 @@ export function formatLogLines(lines: readonly unknown[]): string[] {
   return lines.map((l) => (Array.isArray(l) ? String(l[l.length - 1]) : String(l)));
 }
 
+export interface ApiBody<T> {
+  readonly success: boolean;
+  readonly result: T;
+  readonly result_info?: ResultInfo;
+  readonly errors?: { code: number; message: string }[];
+}
+
 /** True while Cloudflare reports more pages, or (without totals) the page came back full. */
 export function hasMorePages(info: ResultInfo | undefined, received: number, perPage: number): boolean {
   if (received === 0) return false;
@@ -83,13 +90,33 @@ export function hasMorePages(info: ResultInfo | undefined, received: number, per
   return received >= perPage;
 }
 
-/** Compares as filesystem paths so spaces, Arabic letters and Windows paths all match. */
+/**
+ * Compares real filesystem paths so spaces, Arabic letters, Windows paths and
+ * symlinked entrypoints all match.
+ */
 export function isEntrypoint(moduleUrl: string, argv1: string | undefined): boolean {
   if (!argv1) return false;
+  const real = (p: string) => {
+    try {
+      return realpathSync(p);
+    } catch {
+      return p;
+    }
+  };
   try {
-    return fileURLToPath(moduleUrl) === argv1;
+    return real(fileURLToPath(moduleUrl)) === real(argv1);
   } catch {
     return false;
+  }
+}
+
+/** Parses an API response body; non-JSON (e.g. a gateway HTML page) becomes an unsuccessful body. */
+export function parseApiBody<T>(text: string): ApiBody<T> | { readonly success: false } {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return typeof parsed === "object" && parsed !== null ? (parsed as ApiBody<T>) : { success: false };
+  } catch {
+    return { success: false };
   }
 }
 
@@ -118,18 +145,12 @@ function readToken(): string {
   );
 }
 
-interface ApiBody<T> {
-  readonly success: boolean;
-  readonly result: T;
-  readonly result_info?: ResultInfo;
-  readonly errors?: { code: number; message: string }[];
-}
-
 async function request<T>(token: string, path: string): Promise<ApiBody<T>> {
   const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
-  const body = (await res.json()) as ApiBody<T>;
+  const body = parseApiBody<T>(await res.text());
   if (!res.ok || !body.success) {
-    const why = body.errors?.map((e) => `${e.code} ${e.message}`).join("; ") || `HTTP ${res.status}`;
+    const errors = "errors" in body ? body.errors : undefined;
+    const why = errors?.map((e) => `${e.code} ${e.message}`).join("; ") || `HTTP ${res.status}`;
     throw new Error(`${path}: ${why}`);
   }
   return body;

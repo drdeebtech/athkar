@@ -69,3 +69,32 @@ describe("isEntrypoint", () => {
     expect(isEntrypoint(pathToFileURL(path).href, undefined)).toBe(false);
   });
 });
+
+describe("isEntrypoint with symlinks", () => {
+  it("matches when argv[1] is a symlink to the module", async () => {
+    const { isEntrypoint } = await import("./cf-build-logs");
+    const { mkdtempSync, writeFileSync, symlinkSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { pathToFileURL } = await import("node:url");
+    const dir = mkdtempSync(join(tmpdir(), "athkar-entry-"));
+    const real = join(dir, "real.ts");
+    const link = join(dir, "link.ts");
+    writeFileSync(real, "");
+    symlinkSync(real, link);
+    expect(isEntrypoint(pathToFileURL(real).href, link)).toBe(true);
+  });
+});
+
+describe("parseApiBody", () => {
+  it("parses JSON bodies", async () => {
+    const { parseApiBody } = await import("./cf-build-logs");
+    expect(parseApiBody('{"success":true,"result":[1]}')).toEqual({ success: true, result: [1] });
+  });
+
+  it("returns an unsuccessful body for HTML or empty responses", async () => {
+    const { parseApiBody } = await import("./cf-build-logs");
+    expect(parseApiBody("<html>502 Bad Gateway</html>")).toEqual({ success: false });
+    expect(parseApiBody("")).toEqual({ success: false });
+  });
+});
