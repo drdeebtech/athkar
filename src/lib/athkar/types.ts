@@ -32,6 +32,8 @@ export interface Section {
   readonly id: SectionId;
   readonly title: string;
   readonly icon: string;
+  /** OKLCH hue of the section's clay glaze (0–360). */
+  readonly hue: number;
 }
 
 export interface SectionWithCategories extends Section {

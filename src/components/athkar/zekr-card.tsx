@@ -19,9 +19,9 @@ interface ZekrCardProps {
   readonly onReset: () => void;
 }
 
-
 export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset }: ZekrCardProps) {
   const status = counterStatus(counter);
+  const done = status === "done";
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -37,30 +37,25 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset }:
     <article
       id={`zekr-${zekr.id}`}
       aria-label={`الذكر ${index + 1} من ${total}`}
-      className={cn(
-        "scroll-mt-24 rounded-2xl border bg-card text-card-foreground shadow-sm transition-[opacity,border-color] duration-300",
-        status === "done" && "border-done/60 opacity-70",
-      )}
+      className={cn("clay scroll-mt-32 transition-opacity duration-500 [--clay-r:2rem]", done && "opacity-75")}
     >
-      <header className="flex items-center justify-between border-b px-4 py-2 text-sm text-muted-foreground">
-        <span>
-          الذكر <span className="font-bold text-foreground">{index + 1}</span> من {total}
+      <header className="flex items-center justify-between px-5 pt-4 text-sm text-muted-foreground sm:px-7">
+        <span className="font-display">
+          الذكر <span className="text-base font-bold text-foreground">{index + 1}</span> من {total}
         </span>
-        <span className="rounded-full bg-secondary px-2.5 py-0.5 font-medium text-secondary-foreground">
-          {timesCount(counter.target)}
-        </span>
+        <span className="clay-sm glaze px-3 py-1 text-xs font-bold [--hue:60]">{timesCount(counter.target)}</span>
       </header>
 
-      <div className="px-4 py-4 sm:px-6">
+      <div className="px-5 pt-3 pb-5 sm:px-7">
         <ZekrText text={zekr.text} />
 
         {(zekr.virtue || zekr.reference) && (
-          <details className="group mt-3 rounded-lg bg-muted/60 text-sm">
-            <summary className="cursor-pointer list-none px-3 py-2 font-medium text-muted-foreground marker:hidden hover:text-foreground">
+          <details className="group clay-inset mt-4 text-sm [--clay-r:1.25rem]">
+            <summary className="cursor-pointer list-none px-4 py-3 font-medium text-muted-foreground marker:hidden hover:text-foreground">
               <span className="group-open:hidden">عرض الفضل والمصدر</span>
               <span className="hidden group-open:inline">إخفاء الفضل والمصدر</span>
             </summary>
-            <div className="space-y-2 px-3 pb-3 leading-relaxed">
+            <div className="space-y-2 px-4 pb-4 leading-relaxed">
               {zekr.virtue && (
                 <p>
                   <span className="font-bold">الفضل: </span>
@@ -78,28 +73,29 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset }:
         )}
       </div>
 
-      <footer className="flex items-center gap-2 border-t px-3 py-3 sm:px-4">
+      <footer className="flex items-center gap-3 px-4 pb-5 sm:px-6">
         <button
           type="button"
           data-counter
-          onClick={() => status !== "done" && onTap()}
-          aria-disabled={status === "done"}
-          aria-label={status === "done" ? "تم هذا الذكر" : `اضغط للعد، المتبقي ${counter.remaining}`}
+          key={counter.remaining}
+          onClick={() => !done && onTap()}
+          aria-disabled={done}
+          aria-label={done ? "تم هذا الذكر" : `اضغط للعد، المتبقي ${counter.remaining}`}
+          style={{ "--hue": done ? 150 : 60 } as React.CSSProperties}
           className={cn(
-            "flex h-14 flex-1 items-center justify-center gap-3 rounded-xl text-lg font-bold transition-colors select-none active:scale-[0.98]",
-            status === "done"
-              ? "bg-done/15 text-done"
-              : "bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50",
+            "clay glaze flex h-16 flex-1 items-center justify-center gap-3 [--clay-r:9999px] select-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            done ? "cursor-default" : "clay-press squish",
           )}
         >
-          {status === "done" ? (
+          {done ? (
             <>
-              <Check className="size-6" aria-hidden="true" /> تم
+              <Check className="size-7" strokeWidth={2.6} aria-hidden="true" />
+              <span className="font-display text-xl font-extrabold">تمّ</span>
             </>
           ) : (
             <>
-              <span className="tabular-nums text-2xl">{counter.remaining}</span>
-              <span className="text-base font-medium opacity-90">اضغط للعدّ</span>
+              <span className="font-display text-3xl leading-none font-extrabold tabular-nums">{counter.remaining}</span>
+              <span className="font-display text-base font-bold opacity-80">اضغط للعدّ</span>
             </>
           )}
         </button>
@@ -138,7 +134,7 @@ function IconButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="grid size-12 shrink-0 place-items-center rounded-xl border text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-35"
+      className="clay-sm clay-press grid size-12 shrink-0 place-items-center text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40"
     >
       {children}
     </button>

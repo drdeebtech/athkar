@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { athkarCount, resultsCount, timesCount } from "./arabic";
+import { athkarCount, resultsCount, situationsCount, timesCount } from "./arabic";
 
 describe("Arabic counted nouns", () => {
   it("formats athkar counts with dual, plural and tamyiz forms", () => {
@@ -26,5 +26,14 @@ describe("Arabic counted nouns", () => {
     expect(timesCount(3)).toBe("3 مرات");
     expect(timesCount(33)).toBe("33 مرة");
     expect(timesCount(100)).toBe("100 مرة");
+  });
+});
+
+describe("situationsCount", () => {
+  it("formats situation counts", () => {
+    expect(situationsCount(1)).toBe("موقف واحد");
+    expect(situationsCount(2)).toBe("موقفان");
+    expect(situationsCount(8)).toBe("8 مواقف");
+    expect(situationsCount(19)).toBe("19 موقفًا");
   });
 });
