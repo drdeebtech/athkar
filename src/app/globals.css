@@ -224,12 +224,22 @@ html[data-font="4"] { --zekr-size: 2.4rem; }
   .squish {
     animation: squish 260ms var(--ease-out-quart);
   }
+  /* Same motion under another name: switching names restarts the animation. */
+  .squish-alt {
+    animation: squish-alt 260ms var(--ease-out-quart);
+  }
 }
 
 @keyframes rise {
   from {
     opacity: 0;
     transform: translateY(14px) scale(0.98);
+  }
+}
+
+@keyframes squish-alt {
+  35% {
+    transform: scale(0.9, 0.86);
   }
 }
 

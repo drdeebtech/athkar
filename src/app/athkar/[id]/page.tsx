@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { Metadata } from "next";
+import type { Metadata, ResolvingMetadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SectionIcon } from "@/components/athkar/section-icon";
@@ -18,16 +18,25 @@ export function generateStaticParams() {
   return getCategories().map((c) => ({ id: String(c.id) }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props, parent: ResolvingMetadata): Promise<Metadata> {
   const category = getCategory((await params).id);
   if (!category) return {};
+  // A page-level openGraph replaces the parent's, so extend the inherited one to
+  // keep the site share image, type, site name and locale on every situation page.
+  const inherited = await parent;
   const first = stripDiacritics(category.items[0]?.text ?? "").replace(/\s+/g, " ").slice(0, 120);
   const description = `${category.title}: ${category.items.length} من الأذكار والأدعية من حصن المسلم. ${first}…`;
   return {
     title: category.title,
     description,
     alternates: { canonical: `/athkar/${category.id}` },
-    openGraph: { title: `${category.title} | ${siteConfig.name}`, description, url: `/athkar/${category.id}` },
+    openGraph: {
+      ...inherited.openGraph,
+      title: `${category.title} | ${siteConfig.name}`,
+      description,
+      url: `/athkar/${category.id}`,
+    },
+    twitter: { ...inherited.twitter, card: "summary_large_image", title: category.title, description },
   };
 }
 

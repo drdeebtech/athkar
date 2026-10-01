@@ -159,9 +159,9 @@ export function ReadingSettingsButton() {
               <button
                 type="button"
                 aria-label="تكبير الخط"
-                disabled={settings.fontStep >= FONT_STEPS.length - 1}
+                aria-disabled={settings.fontStep >= FONT_STEPS.length - 1}
                 onClick={() => update({ fontStep: settings.fontStep + 1 })}
-                className="clay-sm clay-press grid size-10 place-items-center disabled:pointer-events-none disabled:opacity-40"
+                className="clay-sm clay-press grid size-10 place-items-center aria-disabled:cursor-default aria-disabled:opacity-40"
               >
                 <Plus className="size-4" aria-hidden="true" />
               </button>
@@ -171,9 +171,9 @@ export function ReadingSettingsButton() {
               <button
                 type="button"
                 aria-label="تصغير الخط"
-                disabled={settings.fontStep <= 0}
+                aria-disabled={settings.fontStep <= 0}
                 onClick={() => update({ fontStep: settings.fontStep - 1 })}
-                className="clay-sm clay-press grid size-10 place-items-center disabled:pointer-events-none disabled:opacity-40"
+                className="clay-sm clay-press grid size-10 place-items-center aria-disabled:cursor-default aria-disabled:opacity-40"
               >
                 <Minus className="size-4" aria-hidden="true" />
               </button>

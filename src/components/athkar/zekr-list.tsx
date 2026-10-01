@@ -28,13 +28,25 @@ function advanceTo(id: string) {
   card.querySelector<HTMLButtonElement>("[data-counter]")?.focus({ preventScroll: true });
 }
 
+function announce(index: number, current: CounterState, action: CounterAction): string {
+  const n = index + 1;
+  if (action.type === "reset") return `أُعيد عدّ الذكر ${n}`;
+  if (current.remaining === 0) return "";
+  const left = current.remaining - 1;
+  return left === 0 ? `تمّ الذكر ${n}` : `الذكر ${n}: المتبقي ${left}`;
+}
+
 export function ZekrList({ title, items, next }: ZekrListProps) {
   const [counters, setCounters] = useState<CounterState[]>(() => initial(items));
+  // Screen readers do not reliably re-read a focused button whose label changed,
+  // so each tap is also announced here.
+  const [announcement, setAnnouncement] = useState("");
 
   const dispatch = (index: number, action: CounterAction) => {
     const current = counters[index];
     const completes = action.type === "tap" && current.remaining === 1;
     setCounters((list) => list.map((c, i) => (i === index ? counterReducer(c, action) : c)));
+    setAnnouncement(announce(index, current, action));
 
     if (!completes) return;
     if (typeof navigator.vibrate === "function") navigator.vibrate(30);
@@ -48,6 +60,9 @@ export function ZekrList({ title, items, next }: ZekrListProps) {
 
   return (
     <div>
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
       <div className="clay sticky top-[5.25rem] z-30 mb-6 px-4 py-3 [--clay-r:1.5rem]">
         <div className="flex items-center justify-between gap-3 text-sm">
           <span aria-live="polite" className="font-display">
