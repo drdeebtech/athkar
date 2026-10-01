@@ -1,49 +1,31 @@
-# Contributing
+# المساهمة في أذكار
 
-Thanks for your interest in improving the **AI Website Cloner Template**! This guide covers how to contribute to the template itself.
+شكرًا لرغبتك في تحسين الموقع.
 
-> **Note:** This repository is a *template*. If you just want to clone a website, don't open a PR here — click **Use this template** to make your own copy and work there (see the [README](README.md#quick-start)). Pull requests should improve the template: the `/clone-website` skill, support for the four documented agents, the scaffold, or the docs.
+## الإبلاغ عن خطأ في نص أو تشكيل أو مرجع
 
-## Ways to contribute
+افتح [ملاحظة جديدة](https://github.com/drdeebtech/athkar/issues/new) واذكر:
 
-- **Improve the `/clone-website` skill** — sharper extraction, better prompts, new behaviors to detect
-- **Improve agent support** — fixes for Claude Code, Codex, Cursor, or OpenCode
-- **Fix bugs** in the Next.js scaffold
-- **Improve documentation** — the README, `AGENTS.md`, or the skill references
+- رابط الصفحة، مثل `https://athkar.site/athkar/1`
+- رقم الذكر في الصفحة
+- التصحيح المقترح ومصدره
 
-Browse the [open issues](https://github.com/JCodesMore/ai-website-cloner-template/issues) for something to pick up. For substantial or potentially breaking changes, consider opening an issue first so we can align on the approach before significant work begins.
-
-## Development setup
-
-**Prerequisites:** [Node.js](https://nodejs.org/) 24+.
+## المساهمة بالكود
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/ai-website-cloner-template.git
-cd ai-website-cloner-template
-npm ci
+git clone https://github.com/drdeebtech/athkar.git
+cd athkar
+npm install
+npm run dev
 ```
 
-Before opening a PR, make sure the project is green:
+1. أنشئ فرعًا من `main`.
+2. اكتب الاختبار أولًا لأي منطق جديد في `src/lib` أو `scripts`.
+3. شغّل `npm run check` (فحص الكود، الأنواع، الاختبارات، البناء) قبل فتح طلب الدمج.
+4. افتح طلب دمج إلى `main` واملأ القالب.
 
-```bash
-npm run check   # lint + typecheck + build
-```
+## الأسلوب
 
-## Source-of-truth files
-
-Project instructions live in `AGENTS.md`. The canonical cloning workflow lives in `.agents/skills/clone-website/` and is read directly by Codex, Cursor, and OpenCode. Claude Code enters through `.claude/commands/clone-website.md`, which must remain a thin bridge rather than a second workflow copy.
-
-Edit the canonical skill and its references directly. There is no generation or synchronization step.
-
-## Submitting a pull request
-
-1. **Fork** the repo and create a branch off `master` (e.g. `fix/skill-hover-extraction` or `docs/clarify-setup`).
-2. Make your focused change in the appropriate source-of-truth file.
-3. Run `npm run check` and make sure it passes.
-4. Write a clear commit message that describes the change. Prefixes such as `fix:`, `feat:`, or `docs:` are welcome but not required.
-5. Open a PR against `master`, fill out the PR template, and link a relevant issue when one exists (for example, `Closes #123`).
-6. Keep PRs focused — one logical change per PR is much easier to review and merge.
-
-## Questions
-
-Ask in the [Discord community](https://discord.gg/hrTSX5yTpB) — happy to help you get started.
+- TypeScript صارم بدون `any`، وTailwind للتنسيق.
+- الواجهة عربية فقط واتجاهها من اليمين لليسار.
+- لا تُضف نصوصًا عربية داخل الصور؛ النصوص تُكتب بالخط في الكود.

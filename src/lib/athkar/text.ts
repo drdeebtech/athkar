@@ -1,4 +1,6 @@
-const DIACRITICS = /[ؐ-ًؚ-ٰٟۖ-ۭـ]/g;
+// U+0610–U+061A Quranic signs, U+064B–U+065F harakat, U+0670 superscript alef,
+// U+06D6–U+06ED Quranic annotation marks, U+0640 tatweel.
+const DIACRITICS = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g;
 
 /** Removes harakat, shadda, sukun, Quranic marks and tatweel. */
 export function stripDiacritics(text: string): string {

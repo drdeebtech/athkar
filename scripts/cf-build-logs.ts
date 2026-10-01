@@ -10,10 +10,18 @@
  * macOS from the Keychain item "athkar-cloudflare-builds". Never commit it.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const API = "https://api.cloudflare.com/client/v4";
 const KEYCHAIN_SERVICE = "athkar-cloudflare-builds";
+const PER_PAGE = 50;
+const MAX_PAGES = 20;
+
+interface ResultInfo {
+  readonly page?: number;
+  readonly total_pages?: number;
+}
 
 export interface BuildSummary {
   readonly build_uuid: string;
@@ -68,6 +76,50 @@ export function formatLogLines(lines: readonly unknown[]): string[] {
   return lines.map((l) => (Array.isArray(l) ? String(l[l.length - 1]) : String(l)));
 }
 
+export interface ApiBody<T> {
+  readonly success: boolean;
+  readonly result: T;
+  readonly result_info?: ResultInfo;
+  readonly errors?: { code: number; message: string }[];
+}
+
+/** True while Cloudflare reports more pages, or (without totals) the page came back full. */
+export function hasMorePages(info: ResultInfo | undefined, received: number, perPage: number): boolean {
+  if (received === 0) return false;
+  if (info?.page !== undefined && info.total_pages !== undefined) return info.page < info.total_pages;
+  return received >= perPage;
+}
+
+/**
+ * Compares real filesystem paths so spaces, Arabic letters, Windows paths and
+ * symlinked entrypoints all match.
+ */
+export function isEntrypoint(moduleUrl: string, argv1: string | undefined): boolean {
+  if (!argv1) return false;
+  const real = (p: string) => {
+    try {
+      return realpathSync(p);
+    } catch {
+      return p;
+    }
+  };
+  try {
+    return real(fileURLToPath(moduleUrl)) === real(argv1);
+  } catch {
+    return false;
+  }
+}
+
+/** Parses an API response body; non-JSON (e.g. a gateway HTML page) becomes an unsuccessful body. */
+export function parseApiBody<T>(text: string): ApiBody<T> | { readonly success: false } {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return typeof parsed === "object" && parsed !== null ? (parsed as ApiBody<T>) : { success: false };
+  } catch {
+    return { success: false };
+  }
+}
+
 export function parseArgs(argv: readonly string[]): { buildId?: string; branch?: string } {
   const i = argv.indexOf("--branch");
   const branch = i !== -1 ? argv[i + 1] : undefined;
@@ -93,14 +145,31 @@ function readToken(): string {
   );
 }
 
-async function api<T>(token: string, path: string): Promise<T> {
+async function request<T>(token: string, path: string): Promise<ApiBody<T>> {
   const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
-  const body = (await res.json()) as { success: boolean; result: T; errors?: { code: number; message: string }[] };
+  const body = parseApiBody<T>(await res.text());
   if (!res.ok || !body.success) {
-    const why = body.errors?.map((e) => `${e.code} ${e.message}`).join("; ") || `HTTP ${res.status}`;
+    const errors = "errors" in body ? body.errors : undefined;
+    const why = errors?.map((e) => `${e.code} ${e.message}`).join("; ") || `HTTP ${res.status}`;
     throw new Error(`${path}: ${why}`);
   }
-  return body.result;
+  return body;
+}
+
+async function api<T>(token: string, path: string): Promise<T> {
+  return (await request<T>(token, path)).result;
+}
+
+/** Reads every page of a paginated list endpoint (bounded by MAX_PAGES). */
+async function listAll<T>(token: string, path: string): Promise<T[]> {
+  const all: T[] = [];
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const sep = path.includes("?") ? "&" : "?";
+    const body = await request<T[]>(token, `${path}${sep}page=${page}&per_page=${PER_PAGE}`);
+    all.push(...body.result);
+    if (!hasMorePages(body.result_info, body.result.length, PER_PAGE)) break;
+  }
+  return all;
 }
 
 async function main() {
@@ -118,7 +187,7 @@ async function main() {
     const scripts = await api<{ id: string; tag: string }[]>(token, `/accounts/${accountId}/workers/scripts`);
     const tag = scripts.find((s) => s.id === config.name)?.tag;
     if (!tag) throw new Error(`Worker "${config.name}" not found in account ${accountId}.`);
-    const builds = await api<BuildSummary[]>(token, `/accounts/${accountId}/builds/workers/${tag}/builds`);
+    const builds = await listAll<BuildSummary>(token, `/accounts/${accountId}/builds/workers/${tag}/builds`);
     const latest = pickLatest(builds, branch);
     if (!latest) throw new Error(branch ? `No builds for branch "${branch}".` : "No builds yet.");
     uuid = latest.build_uuid;
@@ -140,7 +209,7 @@ async function main() {
   } while (cursor);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntrypoint(import.meta.url, process.argv[1])) {
   main().catch((err: unknown) => {
     console.error(`cf-build-logs: ${(err as Error).message}`);
     process.exit(1);

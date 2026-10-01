@@ -29,3 +29,7 @@ SOFTWARE.
 
 Athkar texts: Quran and Sunnah, arranged as in Hisn al-Muslim by Sa'id bin Ali bin Wahf Al-Qahtani.
 Dataset: https://github.com/osamayy/azkar-db (no license file published; see /sources).
+
+Commercial use: azkar-db publishes no license, and the permission commonly cited
+for Hisn al-Muslim covers free distribution. Ads stay disabled until the owner
+confirms that an ad-supported site is permitted; record the confirmed terms here.
