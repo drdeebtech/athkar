@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdSlot } from "@/components/athkar/ad-slot";
+import { BrandArt } from "@/components/athkar/brand-art";
 import { SearchBox } from "@/components/athkar/search-box";
 import { SectionGrid } from "@/components/athkar/section-grid";
 import { siteConfig } from "@/config/site";
@@ -14,36 +15,46 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="bg-pattern bg-primary text-primary-foreground dark:bg-card dark:text-foreground">
-        <div className="mx-auto max-w-5xl px-4 pt-10 pb-12 sm:pt-14">
-          <h1 className="text-3xl font-bold sm:text-4xl">{siteConfig.tagline}</h1>
-          <p className="mt-3 max-w-2xl text-base opacity-90 sm:text-lg">
-            {getTotalAthkar()} ذكرًا ودعاءً من حصن المسلم في {categories.length} موقفًا، مع عدّاد يساعدك على الإتمام.
-          </p>
-          <div className="mt-6 max-w-2xl">
-            <SearchBox />
+      <section className="px-3 pt-5">
+        <div className="clay relative mx-auto grid max-w-5xl items-center gap-2 overflow-hidden px-5 pt-8 pb-7 [--clay-r:2.25rem] sm:px-10 md:grid-cols-[1.15fr_1fr] md:py-12">
+          <div className="relative z-10">
+            <p className="rise font-display text-lg font-bold text-primary">بسم الله نبدأ</p>
+            <h1 className="rise mt-1 text-[clamp(2.4rem,7vw,4rem)] leading-[1.05] font-extrabold text-balance [--i:1]">
+              {siteConfig.tagline}
+            </h1>
+            <p className="rise mt-4 max-w-md text-base text-muted-foreground [--i:2] sm:text-lg">
+              {getTotalAthkar()} ذكرًا ودعاءً من حصن المسلم في {categories.length} موقفًا، مع عدّاد يساعدك على الإتمام.
+            </p>
+            <div className="rise mt-6 max-w-xl [--i:3]">
+              <SearchBox />
+            </div>
+            <nav aria-label="الأكثر قراءة" className="rise mt-5 flex flex-wrap gap-2.5 [--i:4]">
+              {quick.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/athkar/${c.id}`}
+                  style={{ "--hue": 60 } as React.CSSProperties}
+                  className="clay-sm clay-press glaze px-4 py-2 font-display text-[0.95rem] font-bold"
+                >
+                  {c.title}
+                </Link>
+              ))}
+            </nav>
           </div>
-          <nav aria-label="الأكثر قراءة" className="mt-5 flex flex-wrap gap-2">
-            {quick.map((c) => (
-              <Link
-                key={c.id}
-                href={`/athkar/${c.id}`}
-                className="rounded-full bg-white/12 px-4 py-2 text-sm font-medium ring-1 ring-white/20 hover:bg-white/20 dark:bg-muted dark:ring-border"
-              >
-                {c.title}
-              </Link>
-            ))}
-          </nav>
+          <div className="rise order-first mx-auto w-[min(78%,22rem)] [--i:2] md:order-none md:w-full">
+            <BrandArt name="rehal" priority sizes="(min-width: 768px) 440px, 78vw" />
+          </div>
         </div>
       </section>
 
-      <div className="mx-auto max-w-5xl px-4 py-10">
-        <nav aria-label="الأقسام" className="mb-8 flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible">
+      <div className="mx-auto max-w-5xl px-4 py-12">
+        <nav aria-label="الأقسام" className="mb-10 flex gap-2.5 overflow-x-auto px-1 pt-1 pb-4 sm:flex-wrap sm:overflow-visible">
           {sections.map((s) => (
             <a
               key={s.id}
               href={`#section-${s.id}`}
-              className="shrink-0 rounded-full border bg-card px-3 py-1.5 text-sm hover:border-primary/40"
+              style={{ "--hue": s.hue } as React.CSSProperties}
+              className="clay-sm clay-press glaze shrink-0 px-4 py-2 text-sm font-bold"
             >
               {s.title}
             </a>

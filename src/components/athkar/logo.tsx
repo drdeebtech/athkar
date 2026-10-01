@@ -1,14 +1,9 @@
 import { cn } from "@/lib/utils";
 
-/** Original mark: an eight-point star (two overlapping squares) around a dot. */
+/** Brand mark: clay eight-point star (see docs/brand/README.md). */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 40 40" aria-hidden="true" className={cn("size-9", className)}>
-      <g fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round">
-        <rect x="9" y="9" width="22" height="22" rx="2" />
-        <rect x="9" y="9" width="22" height="22" rx="2" transform="rotate(45 20 20)" />
-      </g>
-      <circle cx="20" cy="20" r="4" fill="var(--accent)" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element -- static export: pre-sized WebP, no optimizer needed
+    <img src="/brand/logo-mark.webp" alt="" width={40} height={40} className={cn("size-10 shrink-0", className)} />
   );
 }

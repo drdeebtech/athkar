@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Amiri, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Amiri, Baloo_Bhaijaan_2, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { AdsenseScript } from "@/components/athkar/ad-slot";
 import { ReadingSettingsProvider } from "@/components/athkar/reading-settings";
 import { SiteFooter } from "@/components/athkar/site-footer";
@@ -12,6 +12,13 @@ const uiFont = IBM_Plex_Sans_Arabic({
   variable: "--font-ui",
   subsets: ["arabic"],
   weight: ["400", "500", "700"],
+  display: "swap",
+});
+
+const displayFont = Baloo_Bhaijaan_2({
+  variable: "--font-baloo",
+  subsets: ["arabic"],
+  weight: ["500", "700", "800"],
   display: "swap",
 });
 
@@ -39,14 +46,14 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#0f5a45" },
-    { media: "(prefers-color-scheme: dark)", color: "#10211c" },
+    { media: "(prefers-color-scheme: light)", color: "#f4ede0" },
+    { media: "(prefers-color-scheme: dark)", color: "#16231f" },
   ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl" className={`${uiFont.variable} ${zekrFont.variable}`} suppressHydrationWarning>
+    <html lang="ar" dir="rtl" className={`${uiFont.variable} ${displayFont.variable} ${zekrFont.variable}`} suppressHydrationWarning>
       <head>
         {/* Runs synchronously before first paint; PRE_PAINT_SCRIPT is a build-time constant. */}
         <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_SCRIPT }} />
@@ -56,7 +63,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <ReadingSettingsProvider>
           <a
             href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-50 focus:rounded-full focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
           >
             تخطَّ إلى المحتوى
           </a>
