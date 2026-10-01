@@ -56,11 +56,21 @@ describe("self-hosted font coverage", () => {
     expect(uncovered(text)).toEqual([]);
   });
 
-  it("ships a license next to every font family", () => {
+  it("ships the upstream license next to every font family", () => {
     const files = readdirSync(join(ROOT, "src/fonts"));
-    for (const family of ["Amiri", "BalooBhaijaan2", "IBMPlexSansArabic"]) {
-      expect(files.some((f) => f.startsWith(family) && f.endsWith(".woff2"))).toBe(true);
-      expect(files).toContain(`OFL-${family}.txt`);
-    }
+    // woff2 file prefix -> license of the upstream family it was built from
+    const licenses: Record<string, string> = {
+      Amiri: "OFL-Amiri.txt",
+      BalooBhaijaan2: "OFL-BalooBhaijaan2.txt",
+      AthkarSansArabic: "OFL-IBMPlexSansArabic.txt",
+    };
+    const families = new Set(files.filter((f) => f.endsWith(".woff2")).map((f) => f.split("-")[0]));
+    expect([...families].sort()).toEqual(Object.keys(licenses).sort());
+    for (const license of Object.values(licenses)) expect(files).toContain(license);
+  });
+
+  it("never ships a font whose file name uses the reserved name Plex", () => {
+    const files = readdirSync(join(ROOT, "src/fonts")).filter((f) => f.endsWith(".woff2"));
+    expect(files.filter((f) => /plex/i.test(f))).toEqual([]);
   });
 });

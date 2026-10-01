@@ -11,13 +11,15 @@ import "./globals.css";
 // Fonts are self-hosted (src/fonts, OFL-licensed, built by scripts/fonts/build-fonts.py)
 // so builds never fetch from Google Fonts. They are subset to the Arabic + Latin
 // ranges in src/fonts/unicode-ranges.json; font-coverage.test.ts guards that.
+// "Athkar Sans Arabic" is our subset of IBM Plex Sans Arabic, renamed because
+// "Plex" is an OFL Reserved Font Name (see THIRD_PARTY_NOTICES.md).
 
 const uiFont = localFont({
   variable: "--font-ui",
   src: [
-    { path: "../fonts/IBMPlexSansArabic-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/IBMPlexSansArabic-Medium.woff2", weight: "500", style: "normal" },
-    { path: "../fonts/IBMPlexSansArabic-Bold.woff2", weight: "700", style: "normal" },
+    { path: "../fonts/AthkarSansArabic-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/AthkarSansArabic-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/AthkarSansArabic-Bold.woff2", weight: "700", style: "normal" },
   ],
   display: "swap",
 });

@@ -43,4 +43,7 @@ Self-hosted in `src/fonts/`, each with its SIL Open Font License 1.1 file
 
 - Baloo Bhaijaan 2 (`ofl/baloobhaijaan2`), Ek Type
 - Amiri (`ofl/amiri`), Khaled Hosny and contributors
-- IBM Plex Sans Arabic (`ofl/ibmplexsansarabic`), IBM Corp.
+- IBM Plex Sans Arabic (`ofl/ibmplexsansarabic`), IBM Corp., with Reserved
+  Font Name "Plex". Our subset is a Modified Version, so it is distributed as
+  "Athkar Sans Arabic" (`src/fonts/AthkarSansArabic-*.woff2`). IBM's copyright,
+  trademark and license records inside the files are unchanged.

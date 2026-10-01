@@ -25,7 +25,7 @@ type is always set in code with Baloo Bhaijaan 2 so letters join correctly).
 ## Type
 
 - Display: Baloo Bhaijaan 2 (variable, 400–800)
-- Interface: IBM Plex Sans Arabic (400/500/700)
+- Interface: Athkar Sans Arabic, our renamed subset of IBM Plex Sans Arabic (400/500/700)
 - Adhkar text: Amiri (400/700)
 
 Fonts are self-hosted from `src/fonts/` (no build-time requests to Google
