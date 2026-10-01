@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "athkar",
+  // Not a secret: pins deploys and the build-log script to this account.
+  "account_id": "fc8c8db485888cc39d246ac7d81f9f5f",
+  "compatibility_date": "2026-10-01",
+  // Required by `wrangler preview`, which Cloudflare Workers Builds runs for
+  // pull-request branches. Assets and routes stay at the top level.
+  "previews": {},
+  // `wrangler deploy` runs the static export first, then uploads out/.
+  "build": {
+    "command": "npm run build"
+  },
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  },
+  "routes": [
+    { "pattern": "athkar.site", "custom_domain": true },
+    { "pattern": "www.athkar.site", "custom_domain": true }
+  ]
+}
