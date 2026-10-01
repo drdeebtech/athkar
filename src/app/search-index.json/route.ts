@@ -10,5 +10,6 @@ export function GET() {
     sectionId,
     items: items.map(({ id: zid, text, count }) => ({ id: zid, text, count })),
   }));
-  return Response.json(index, { headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" } });
+  // Cache headers for this file live in public/_headers (static export ignores them here).
+  return Response.json(index);
 }

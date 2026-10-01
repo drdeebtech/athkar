@@ -26,7 +26,7 @@ npm run check      # فحص الكود + الأنواع + الاختبارات +
 
 | المتغير | الوصف |
 |---|---|
-| `NEXT_PUBLIC_SITE_URL` | رابط الموقع المنشور، لروابط خريطة الموقع |
+| `NEXT_PUBLIC_SITE_URL` | رابط الموقع (الافتراضي https://athkar.site) |
 | `NEXT_PUBLIC_ADSENSE_CLIENT` | معرّف AdSense، والإعلانات معطلة بدونه |
 | `NEXT_PUBLIC_ADSENSE_SLOT` | معرّف وحدة الإعلان |
 

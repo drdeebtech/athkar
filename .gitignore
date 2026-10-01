@@ -53,3 +53,7 @@ temp/
 
 # local browser QA artifacts
 .gstack/
+
+# static export and wrangler
+/out/
+.wrangler/

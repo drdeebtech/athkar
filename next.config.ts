@@ -1,18 +1,10 @@
 import path from "node:path";
 import type { NextConfig } from "next";
 
-if (
-  process.argv.includes("build") &&
-  !process.env.NEXT_PUBLIC_SITE_URL &&
-  !process.env.VERCEL_PROJECT_PRODUCTION_URL
-) {
-  console.warn(
-    "[athkar] NEXT_PUBLIC_SITE_URL is not set: canonical, Open Graph and sitemap URLs will point at localhost.",
-  );
-}
-
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Every page is pre-rendered, so the site ships as static files (out/)
+  // served by Cloudflare Workers static assets. See wrangler.jsonc.
+  output: "export",
   turbopack: { root: path.resolve(import.meta.dirname) },
 };
 

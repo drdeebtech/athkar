@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { siteConfig } from "@/config/site";
+
+export const dynamic = "force-static";
 import { getCategories } from "@/lib/athkar/data";
 
 export default function sitemap(): MetadataRoute.Sitemap {

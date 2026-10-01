@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "athkar",
+  "compatibility_date": "2026-10-01",
+  // `wrangler deploy` runs the static export first, then uploads out/.
+  "build": {
+    "command": "npm run build"
+  },
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  },
+  "routes": [
+    { "pattern": "athkar.site", "custom_domain": true },
+    { "pattern": "www.athkar.site", "custom_domain": true }
+  ]
+}
