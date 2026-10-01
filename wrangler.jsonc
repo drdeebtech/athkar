@@ -1,6 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "athkar",
+  // Not a secret: pins deploys and the build-log script to this account.
+  "account_id": "fc8c8db485888cc39d246ac7d81f9f5f",
   "compatibility_date": "2026-10-01",
   // `wrangler deploy` runs the static export first, then uploads out/.
   "build": {

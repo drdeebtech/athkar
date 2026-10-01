@@ -30,6 +30,27 @@ npm run check      # فحص الكود + الأنواع + الاختبارات +
 | `NEXT_PUBLIC_ADSENSE_CLIENT` | معرّف AdSense، والإعلانات معطلة بدونه |
 | `NEXT_PUBLIC_ADSENSE_SLOT` | معرّف وحدة الإعلان |
 
+## سجلات بناء Cloudflare
+
+لقراءة سجل آخر بناء من الطرفية:
+
+```bash
+npm run logs:build                  # آخر بناء
+npm run logs:build -- --branch main # آخر بناء لفرع معيّن
+npm run logs:build -- <build_uuid>  # بناء محدد
+```
+
+يحتاج السكربت مفتاح API بصلاحيات قراءة فقط، ولا يُحفظ المفتاح في المشروع أبدًا:
+
+1. أنشئ مفتاحًا من https://dash.cloudflare.com/profile/api-tokens ← Create Token ← Custom token، بصلاحيتين على مستوى الحساب: `Workers Builds Configuration: Read` و `Workers Scripts: Read`.
+2. احفظه في Keychain الماك (يطلب منك لصق المفتاح بشكل مخفي):
+
+```bash
+security add-generic-password -a "$USER" -s athkar-cloudflare-builds -w
+```
+
+أو مرّره كمتغير بيئة `CLOUDFLARE_BUILDS_API_TOKEN` في أي نظام آخر.
+
 ## مصدر المحتوى
 
 النصوص من القرآن الكريم والسنة النبوية بترتيب كتاب «حصن المسلم» للشيخ سعيد بن علي بن وهف القحطاني، وقاعدة البيانات من مشروع [azkar-db](https://github.com/osamayy/azkar-db). الملف الأصلي محفوظ في `data/sources/azkar-db.json`.
