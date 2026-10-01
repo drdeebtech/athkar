@@ -23,5 +23,7 @@ describe("ReadingSettingsButton font controls", () => {
     expect(plus.hasAttribute("disabled")).toBe(false);
     expect(plus.getAttribute("aria-disabled")).toBe("true");
     expect(document.activeElement).toBe(plus);
+    // Clamped at the largest step, not pushed past it by the extra clicks.
+    expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe("5 / 5");
   });
 });
