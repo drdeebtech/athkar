@@ -43,3 +43,29 @@ describe("parseArgs", () => {
     expect(parseArgs(["--branch", "main"])).toEqual({ buildId: undefined, branch: "main" });
   });
 });
+
+describe("hasMorePages", () => {
+  it("continues while the current page is below total_pages", async () => {
+    const { hasMorePages } = await import("./cf-build-logs");
+    expect(hasMorePages({ page: 1, total_pages: 3 }, 25, 25)).toBe(true);
+    expect(hasMorePages({ page: 3, total_pages: 3 }, 25, 25)).toBe(false);
+  });
+
+  it("falls back to page fullness when total_pages is missing", async () => {
+    const { hasMorePages } = await import("./cf-build-logs");
+    expect(hasMorePages(undefined, 25, 25)).toBe(true);
+    expect(hasMorePages(undefined, 7, 25)).toBe(false);
+    expect(hasMorePages({ page: 1 }, 0, 25)).toBe(false);
+  });
+});
+
+describe("isEntrypoint", () => {
+  it("matches paths with spaces and Arabic letters", async () => {
+    const { isEntrypoint } = await import("./cf-build-logs");
+    const { pathToFileURL } = await import("node:url");
+    const path = "/tmp/مشروع أذكار/scripts/cf-build-logs.ts";
+    expect(isEntrypoint(pathToFileURL(path).href, path)).toBe(true);
+    expect(isEntrypoint(pathToFileURL(path).href, "/tmp/other.ts")).toBe(false);
+    expect(isEntrypoint(pathToFileURL(path).href, undefined)).toBe(false);
+  });
+});

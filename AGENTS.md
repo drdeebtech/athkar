@@ -8,65 +8,40 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Website Reverse-Engineer Template
+# أذكار (athkar.site)
 
 ## What This Is
-A reusable template for reverse-engineering any website into a clean, modern Next.js codebase using AI coding agents. The Next.js + shadcn/ui + Tailwind v4 base is pre-scaffolded — just run `/clone-website <url1> [<url2> ...]`.
+An Arabic-only (RTL) website that helps Muslims read the right adhkar for every
+situation: 345 adhkar from Hisn al-Muslim in 135 situations, with tap counters,
+search and reading settings. Content source: `data/sources/azkar-db.json`.
 
 ## Tech Stack
-- **Framework:** Next.js 16 (App Router, React 19, TypeScript strict)
-- **UI:** shadcn/ui (Radix primitives, Tailwind CSS v4, `cn()` utility)
-- **Icons:** Lucide React (default — will be replaced/supplemented by extracted SVGs)
-- **Styling:** Tailwind CSS v4 with oklch design tokens
-- **Deployment:** Vercel
+- **Framework:** Next.js 16 (App Router, React 19, TypeScript strict), static export (`output: "export"`)
+- **UI:** Tailwind CSS v4 with OKLCH tokens, shadcn/ui primitives, Lucide icons
+- **Fonts:** IBM Plex Sans Arabic (UI), Amiri (adhkar text)
+- **Deployment:** Cloudflare Workers static assets (`wrangler.jsonc`), domain athkar.site
+- **Tests:** Vitest
 
 ## Commands
-- `npm run dev` — Start dev server
-- `npm run build` — Production build
-- `npm run lint` — ESLint check
-- `npm run typecheck` — TypeScript check
-- `npm run check` — Run lint + typecheck + build
+- `npm run dev` — dev server
+- `npm run build` — static export to `out/`
+- `npm test` — unit tests
+- `npm run check` — lint + typecheck + tests + build
+- `npm run deploy` — build and deploy with Wrangler
+- `npm run logs:build` — read Cloudflare Workers Builds logs
 
 ## Code Style
-- TypeScript strict mode, no `any`
-- Named exports, PascalCase components, camelCase utils
-- Tailwind utility classes, no inline styles
-- 2-space indentation
-- Responsive: mobile-first
-
-## Design Principles
-- **Pixel-perfect emulation** — match the target's spacing, colors, typography exactly
-- **No personal aesthetic changes during emulation phase** — match 1:1 first, customize later
-- **Real content** — use actual text and assets from the target site, not placeholders
-- **Beauty-first** — every pixel matters
+- TypeScript strict, no `any`; named exports; 2-space indentation
+- Tailwind utilities; CSS variables only for data-driven values
+- Mobile-first, RTL-first, accessible (labels, focus, reduced motion)
+- Never render Arabic text inside images; set it in code
 
 ## Project Structure
 ```
-src/
-  app/              # Next.js routes
-  components/       # React components
-    ui/             # shadcn/ui primitives
-    icons.tsx       # Extracted SVG icons as React components
-  lib/
-    utils.ts        # cn() utility (shadcn)
-  types/            # TypeScript interfaces
-  hooks/            # Custom React hooks
-public/
-  images/           # Downloaded images from target site
-  videos/           # Downloaded videos from target site
-  seo/              # Favicons, OG images, webmanifest
-docs/
-  research/         # Inspection output (design tokens, components, layout)
-  design-references/ # Screenshots and visual references
-scripts/            # Asset download scripts
-.agents/
-  skills/
-    clone-website/  # Canonical cross-agent cloning workflow
-.claude/
-  commands/
-    clone-website.md # Thin Claude Code invocation bridge
+data/sources/          vendored adhkar dataset
+src/lib/athkar/        data, text, search, counter, settings logic (+ tests)
+src/components/athkar/ UI components
+src/app/               routes: /, /athkar/[id], /sources, sitemap, robots
+scripts/               maintenance scripts (+ tests)
+docs/superpowers/      design spec and implementation plan
 ```
-
-## Agent Workflow
-- Edit `.agents/skills/clone-website/` for cloning-workflow changes. It is the canonical skill used by Codex, Cursor, and OpenCode.
-- Keep `.claude/commands/clone-website.md` as a thin Claude Code bridge to the canonical skill; do not duplicate the workflow there.
