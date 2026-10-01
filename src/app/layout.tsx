@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Amiri, Baloo_Bhaijaan_2, IBM_Plex_Sans_Arabic } from "next/font/google";
+import localFont from "next/font/local";
 import { AdsenseScript } from "@/components/athkar/ad-slot";
 import { ReadingSettingsProvider } from "@/components/athkar/reading-settings";
 import { SiteFooter } from "@/components/athkar/site-footer";
@@ -8,25 +8,39 @@ import { siteConfig } from "@/config/site";
 import { PRE_PAINT_SCRIPT } from "@/lib/athkar/settings";
 import "./globals.css";
 
-const uiFont = IBM_Plex_Sans_Arabic({
+// Fonts are self-hosted (src/fonts, OFL-licensed, built by scripts/fonts/build-fonts.py)
+// so builds never fetch from Google Fonts. They are subset to the Arabic + Latin
+// ranges in src/fonts/unicode-ranges.json; font-coverage.test.ts guards that.
+// "Athkar Sans Arabic" is our subset of IBM Plex Sans Arabic, renamed because
+// "Plex" is an OFL Reserved Font Name (see THIRD_PARTY_NOTICES.md).
+
+const uiFont = localFont({
   variable: "--font-ui",
-  subsets: ["arabic"],
-  weight: ["400", "500", "700"],
+  src: [
+    { path: "../fonts/AthkarSansArabic-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/AthkarSansArabic-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/AthkarSansArabic-Bold.woff2", weight: "700", style: "normal" },
+  ],
   display: "swap",
 });
 
-const displayFont = Baloo_Bhaijaan_2({
+const displayFont = localFont({
   variable: "--font-baloo",
-  subsets: ["arabic"],
-  weight: ["500", "700", "800"],
+  src: [{ path: "../fonts/BalooBhaijaan2-Variable.woff2", weight: "400 800", style: "normal" }],
   display: "swap",
 });
 
-const zekrFont = Amiri({
+// Amiri is the largest family and mostly sits below the first screen, so it is
+// not preloaded; a metric-matched serif fallback keeps layout shift low.
+const zekrFont = localFont({
   variable: "--font-amiri",
-  subsets: ["arabic"],
-  weight: ["400", "700"],
+  src: [
+    { path: "../fonts/Amiri-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/Amiri-Bold.woff2", weight: "700", style: "normal" },
+  ],
   display: "swap",
+  preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
 export const metadata: Metadata = {

@@ -33,3 +33,17 @@ Dataset: https://github.com/osamayy/azkar-db (no license file published; see /so
 Commercial use: azkar-db publishes no license, and the permission commonly cited
 for Hisn al-Muslim covers free distribution. Ads stay disabled until the owner
 confirms that an ad-supported site is permitted; record the confirmed terms here.
+
+## Fonts
+
+Self-hosted in `src/fonts/`, each with its SIL Open Font License 1.1 file
+(`OFL-<Family>.txt`). Source: https://github.com/google/fonts at commit
+9710da1eacb3be272583c3224dcb70f9da6eadbb, subset to Arabic + Latin ranges by
+`scripts/fonts/build-fonts.py` (all OpenType layout features kept).
+
+- Baloo Bhaijaan 2 (`ofl/baloobhaijaan2`), Ek Type
+- Amiri (`ofl/amiri`), Khaled Hosny and contributors
+- IBM Plex Sans Arabic (`ofl/ibmplexsansarabic`), IBM Corp., with Reserved
+  Font Name "Plex". Our subset is a Modified Version, so it is distributed as
+  "Athkar Sans Arabic" (`src/fonts/AthkarSansArabic-*.woff2`). IBM's copyright,
+  trademark and license records inside the files are unchanged.
