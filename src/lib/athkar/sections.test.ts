@@ -30,3 +30,14 @@ describe("sections", () => {
     expect(unmapped).toEqual([]);
   });
 });
+
+describe("section glaze hues", () => {
+  it("gives every section a valid hue, distinct from its neighbours", () => {
+    SECTIONS.forEach((s) => {
+      expect(s.hue).toBeGreaterThanOrEqual(0);
+      expect(s.hue).toBeLessThan(360);
+    });
+    const shown = SECTIONS.filter((s) => s.id !== "misc");
+    shown.slice(1).forEach((s, i) => expect(Math.abs(s.hue - shown[i].hue)).toBeGreaterThanOrEqual(20));
+  });
+});

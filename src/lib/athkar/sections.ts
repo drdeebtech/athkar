@@ -2,19 +2,19 @@ import { normalizeArabic } from "./text";
 import type { Section, SectionId } from "./types";
 
 export const SECTIONS: readonly Section[] = [
-  { id: "daily", title: "أذكار اليوم والليلة", icon: "sun" },
-  { id: "prayer", title: "الطهارة والصلاة", icon: "landmark" },
-  { id: "dhikr", title: "التسبيح والاستغفار", icon: "sparkles" },
-  { id: "home", title: "البيت واللباس", icon: "home" },
-  { id: "food", title: "الطعام والصيام", icon: "utensils" },
-  { id: "travel", title: "السفر والتنقل", icon: "plane" },
-  { id: "distress", title: "الهم والكرب والخوف", icon: "shield" },
-  { id: "illness", title: "المرض والموت", icon: "heart-pulse" },
-  { id: "ruqyah", title: "الرقية الشرعية", icon: "book-open" },
-  { id: "social", title: "المعاملات والمناسبات", icon: "users" },
-  { id: "nature", title: "الطبيعة والأحوال", icon: "cloud-rain" },
-  { id: "hajj", title: "الحج والعمرة", icon: "mountain" },
-  { id: "misc", title: "متفرقة", icon: "list" },
+  { id: "daily", title: "أذكار اليوم والليلة", icon: "sun", hue: 60 },
+  { id: "prayer", title: "الطهارة والصلاة", icon: "landmark", hue: 165 },
+  { id: "dhikr", title: "التسبيح والاستغفار", icon: "sparkles", hue: 300 },
+  { id: "home", title: "البيت واللباس", icon: "home", hue: 85 },
+  { id: "food", title: "الطعام والصيام", icon: "utensils", hue: 35 },
+  { id: "travel", title: "السفر والتنقل", icon: "plane", hue: 235 },
+  { id: "distress", title: "الهم والكرب والخوف", icon: "shield", hue: 350 },
+  { id: "illness", title: "المرض والموت", icon: "heart-pulse", hue: 190 },
+  { id: "ruqyah", title: "الرقية الشرعية", icon: "book-open", hue: 135 },
+  { id: "social", title: "المعاملات والمناسبات", icon: "users", hue: 270 },
+  { id: "nature", title: "الطبيعة والأحوال", icon: "cloud-rain", hue: 210 },
+  { id: "hajj", title: "الحج والعمرة", icon: "mountain", hue: 95 },
+  { id: "misc", title: "متفرقة", icon: "list", hue: 120 },
 ];
 
 const TABLE: Readonly<Record<Exclude<SectionId, "misc">, readonly string[]>> = {

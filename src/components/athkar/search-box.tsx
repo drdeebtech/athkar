@@ -63,7 +63,7 @@ export function SearchBox() {
       <label htmlFor={inputId} className="sr-only">
         ابحث عن ذكر أو موقف
       </label>
-      <div className="flex items-center gap-2 rounded-2xl border-2 border-white/20 bg-card px-4 text-card-foreground shadow-lg focus-within:border-accent">
+      <div className="clay-inset flex items-center gap-2 px-5 text-foreground [--clay-r:9999px] focus-within:ring-3 focus-within:ring-ring/40">
         <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
         <input
           id={inputId}
@@ -102,7 +102,7 @@ export function SearchBox() {
       <div
         id={listId}
         hidden={!showPanel}
-        className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-2xl border bg-popover text-popover-foreground shadow-xl"
+        className="clay absolute inset-x-0 top-full z-20 mt-3 overflow-hidden text-popover-foreground [--clay-r:1.5rem]"
       >
         {state.status === "error" && (
           <div className="flex items-center justify-between gap-3 p-4 text-sm text-destructive">
@@ -116,10 +116,10 @@ export function SearchBox() {
           <p className="p-4 text-sm text-muted-foreground">لا توجد نتائج لـ «{deferred.trim()}»</p>
         )}
         {results.length > 0 && (
-          <ul className="max-h-96 divide-y overflow-y-auto">
+          <ul className="max-h-96 overflow-y-auto p-2">
             {results.map(({ category, titleMatch, textMatches }) => (
               <li key={category.id}>
-                <Link href={`/athkar/${category.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted">
+                <Link href={`/athkar/${category.id}`} className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-muted">
                   <span className="font-zekr text-lg font-bold">{category.title}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {titleMatch ? athkarCount(category.items.length) : `${resultsCount(textMatches)} في النص`}

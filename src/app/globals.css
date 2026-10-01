@@ -8,8 +8,9 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-baloo), var(--font-ui), sans-serif;
   --font-zekr: var(--font-amiri), "Traditional Arabic", serif;
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-display);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -34,56 +35,81 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.4);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+/* ── Palette: warm sand clay, sage glaze, apricot accent ───────────────── */
 :root {
-  --background: oklch(0.975 0.012 85);
-  --foreground: oklch(0.26 0.03 165);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.26 0.03 165);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.26 0.03 165);
-  --primary: oklch(0.43 0.09 165);
-  --primary-foreground: oklch(0.985 0.01 85);
-  --secondary: oklch(0.94 0.03 160);
-  --secondary-foreground: oklch(0.32 0.06 165);
-  --muted: oklch(0.95 0.012 85);
-  --muted-foreground: oklch(0.5 0.025 165);
-  --accent: oklch(0.82 0.12 85);
-  --accent-foreground: oklch(0.3 0.05 70);
-  --destructive: oklch(0.58 0.2 27);
-  --border: oklch(0.9 0.018 85);
-  --input: oklch(0.9 0.018 85);
-  --ring: oklch(0.55 0.1 165);
-  --quran: oklch(0.42 0.1 165);
-  --hadith: oklch(0.47 0.1 60);
-  --done: oklch(0.55 0.13 150);
-  --radius: 0.75rem;
+  --background: oklch(0.955 0.022 80);
+  --foreground: oklch(0.3 0.045 165);
+  --card: oklch(0.985 0.012 85);
+  --card-foreground: oklch(0.3 0.045 165);
+  --popover: oklch(0.985 0.012 85);
+  --popover-foreground: oklch(0.3 0.045 165);
+  --primary: oklch(0.55 0.1 165);
+  --primary-foreground: oklch(0.985 0.012 85);
+  --secondary: oklch(0.915 0.045 160);
+  --secondary-foreground: oklch(0.33 0.065 165);
+  --muted: oklch(0.925 0.022 80);
+  --muted-foreground: oklch(0.47 0.035 165);
+  --accent: oklch(0.79 0.12 58);
+  --accent-foreground: oklch(0.3 0.07 45);
+  --destructive: oklch(0.58 0.17 28);
+  --border: oklch(0.88 0.025 80);
+  --input: oklch(0.88 0.025 80);
+  --ring: oklch(0.6 0.11 165);
+  --quran: oklch(0.43 0.1 165);
+  --hadith: oklch(0.49 0.11 50);
+  --done: oklch(0.6 0.12 150);
+  --radius: 0.875rem;
   --zekr-size: 1.75rem;
+
+  /* clay lighting */
+  --clay-ink: oklch(0.3 0.06 160);
+  --clay-drop: oklch(0.35 0.06 160 / 0.28);
+  --clay-hi: oklch(0.995 0.01 85 / 0.9);
+  --clay-shade: 26%;
+  --glaze-l: 0.9;
+  --glaze-c: 0.06;
+  --glaze-mix: 100%;
+  --glaze-ink-l: 0.33;
+  --glaze-ink-c: 0.075;
 }
 
 .dark {
-  --background: oklch(0.19 0.02 170);
-  --foreground: oklch(0.94 0.012 85);
-  --card: oklch(0.235 0.025 170);
-  --card-foreground: oklch(0.94 0.012 85);
-  --popover: oklch(0.235 0.025 170);
-  --popover-foreground: oklch(0.94 0.012 85);
-  --primary: oklch(0.74 0.11 165);
-  --primary-foreground: oklch(0.18 0.02 170);
-  --secondary: oklch(0.29 0.035 170);
+  --background: oklch(0.215 0.022 175);
+  --foreground: oklch(0.93 0.02 85);
+  --card: oklch(0.275 0.025 175);
+  --card-foreground: oklch(0.93 0.02 85);
+  --popover: oklch(0.275 0.025 175);
+  --popover-foreground: oklch(0.93 0.02 85);
+  --primary: oklch(0.74 0.1 165);
+  --primary-foreground: oklch(0.2 0.03 170);
+  --secondary: oklch(0.33 0.035 170);
   --secondary-foreground: oklch(0.9 0.03 160);
-  --muted: oklch(0.27 0.02 170);
-  --muted-foreground: oklch(0.74 0.02 160);
-  --accent: oklch(0.8 0.12 85);
-  --accent-foreground: oklch(0.22 0.03 70);
-  --destructive: oklch(0.7 0.19 22);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.1 165);
-  --quran: oklch(0.82 0.1 165);
-  --hadith: oklch(0.84 0.1 80);
-  --done: oklch(0.75 0.14 150);
+  --muted: oklch(0.25 0.022 175);
+  --muted-foreground: oklch(0.76 0.025 160);
+  --accent: oklch(0.77 0.11 60);
+  --accent-foreground: oklch(0.24 0.05 50);
+  --destructive: oklch(0.7 0.17 25);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.72 0.1 165);
+  --quran: oklch(0.83 0.09 165);
+  --hadith: oklch(0.84 0.09 70);
+  --done: oklch(0.76 0.12 150);
+
+  --clay-ink: oklch(0.08 0.02 175);
+  --clay-drop: oklch(0.05 0.02 175 / 0.55);
+  --clay-hi: oklch(1 0 0 / 0.09);
+  --clay-shade: 40%;
+  /* At night a glaze is a soft tint mixed into the dark clay, never a muddy dark hue. */
+  --glaze-l: 0.6;
+  --glaze-c: 0.09;
+  --glaze-mix: 26%;
+  --glaze-ink-l: 0.9;
+  --glaze-ink-c: 0.055;
 }
 
 html[data-font="0"] { --zekr-size: 1.25rem; }
@@ -92,16 +118,77 @@ html[data-font="2"] { --zekr-size: 1.75rem; }
 html[data-font="3"] { --zekr-size: 2.05rem; }
 html[data-font="4"] { --zekr-size: 2.4rem; }
 
+/* ── Claymorphism ──────────────────────────────────────────────────────── */
+/* Puffy surface lit from above: soft drop, top highlight, bottom shade.
+   Set --clay to change the surface colour; light is direction-neutral for RTL. */
+@utility clay {
+  background-color: var(--clay, var(--card));
+  border-radius: var(--clay-r, 1.75rem);
+  box-shadow:
+    0 1.25rem 2.25rem -1.25rem var(--clay-drop),
+    0 0.35rem 0.75rem -0.4rem var(--clay-drop),
+    inset 0 -0.5rem 1rem -0.2rem color-mix(in oklch, var(--clay, var(--card)), var(--clay-ink) var(--clay-shade)),
+    inset 0 0.5rem 0.9rem -0.25rem var(--clay-hi);
+}
+
+/* Smaller, tighter clay for chips and icon buttons. */
+@utility clay-sm {
+  background-color: var(--clay, var(--card));
+  border-radius: var(--clay-r, 9999px);
+  box-shadow:
+    0 0.55rem 1rem -0.55rem var(--clay-drop),
+    inset 0 -0.25rem 0.5rem -0.1rem color-mix(in oklch, var(--clay, var(--card)), var(--clay-ink) var(--clay-shade)),
+    inset 0 0.25rem 0.45rem -0.1rem var(--clay-hi);
+}
+
+/* Pressed into the clay: wells, inputs, tracks. */
+@utility clay-inset {
+  background-color: var(--clay, var(--muted));
+  border-radius: var(--clay-r, 1.25rem);
+  box-shadow:
+    inset 0 0.3rem 0.65rem color-mix(in oklch, var(--clay-ink) 18%, transparent),
+    inset 0 -0.2rem 0.45rem var(--clay-hi);
+}
+
+/* Squish on press, lift on hover. Transform-only so layout never moves. */
+@utility clay-press {
+  transition:
+    transform 220ms var(--ease-out-quart),
+    box-shadow 220ms var(--ease-out-quart),
+    filter 220ms var(--ease-out-quart);
+  &:hover {
+    transform: translateY(-2px);
+    filter: saturate(1.08);
+  }
+  &:active {
+    transform: translateY(1px) scale(0.97);
+  }
+}
+
+/* Section glaze: one formula, hue per section (set --hue inline). */
+@utility glaze {
+  --clay: color-mix(in oklch, oklch(var(--glaze-l) var(--glaze-c) var(--hue, 165)) var(--glaze-mix), var(--card));
+  color: oklch(var(--glaze-ink-l) var(--glaze-ink-c) var(--hue, 165));
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(42rem 30rem at 100% -6%, color-mix(in oklch, var(--secondary) 75%, transparent), transparent 70%),
+      radial-gradient(36rem 28rem at -8% 108%, color-mix(in oklch, var(--accent) 22%, transparent), transparent 70%);
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;
-    scroll-padding-top: 5rem;
+    scroll-padding-top: 6rem;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: 0;
   }
 }
 
@@ -123,23 +210,39 @@ html[data-font="4"] { --zekr-size: 2.4rem; }
   html[data-bold="on"] .zekr-text {
     font-weight: 700;
   }
-  .seg-quran {
-    color: var(--quran);
-  }
+  .seg-quran { color: var(--quran); }
   .seg-quran::before { content: "﴿"; }
   .seg-quran::after { content: "﴾"; }
-  .seg-hadith {
-    color: var(--hadith);
+  .seg-hadith { color: var(--hadith); }
+
+  /* Staggered entrance, capped so long lists never wait. */
+  .rise {
+    animation: rise 640ms var(--ease-out-quart) both;
+    animation-delay: min(calc(var(--i, 0) * 35ms), 420ms);
   }
-  .bg-pattern {
-    background-image: radial-gradient(circle at 1px 1px, oklch(1 0 0 / 9%) 1px, transparent 0);
-    background-size: 22px 22px;
+  /* Counter bead squish on each tap. */
+  .squish {
+    animation: squish 260ms var(--ease-out-quart);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+@keyframes squish {
+  35% {
+    transform: scale(0.9, 0.86);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
 }

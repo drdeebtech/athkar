@@ -39,8 +39,8 @@ export default async function CategoryPage({ params }: Props) {
   const { prev, next } = getNeighbours(category.id);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
-      <nav aria-label="مسار التصفح" className="mb-3 text-sm text-muted-foreground">
+    <div className="mx-auto max-w-3xl px-4 pt-6 pb-4" style={{ "--hue": section?.hue ?? 165 } as React.CSSProperties}>
+      <nav aria-label="مسار التصفح" className="mb-4 px-2 text-sm text-muted-foreground">
         <ol className="flex flex-wrap items-center gap-1">
           <li>
             <Link href="/" className="hover:text-foreground">الرئيسية</Link>
@@ -52,15 +52,15 @@ export default async function CategoryPage({ params }: Props) {
         </ol>
       </nav>
 
-      <header className="mb-4 flex items-center gap-3">
+      <header className="clay glaze mb-6 flex items-center gap-4 p-5 [--clay-r:2rem] sm:p-6">
         {section && (
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-secondary text-secondary-foreground">
+          <span className="clay-sm grid size-14 shrink-0 place-items-center [--clay:var(--card)] [--clay-r:1.25rem]">
             <SectionIcon name={section.icon} className="size-6" />
           </span>
         )}
         <div>
           <h1 className="font-zekr text-3xl leading-tight font-bold sm:text-4xl">{category.title}</h1>
-          <p className="text-sm text-muted-foreground">{athkarCount(category.items.length)}</p>
+          <p className="mt-1 text-sm font-medium opacity-80">{athkarCount(category.items.length)}</p>
         </div>
       </header>
 
@@ -70,9 +70,9 @@ export default async function CategoryPage({ params }: Props) {
         next={next ? { id: next.id, title: next.title } : undefined}
       />
 
-      <nav aria-label="التنقل بين المواقف" className="mt-8 grid grid-cols-2 gap-3">
+      <nav aria-label="التنقل بين المواقف" className="mt-10 grid grid-cols-2 gap-4">
         {prev ? (
-          <Link href={`/athkar/${prev.id}`} className="flex items-center gap-2 rounded-xl border bg-card p-3 hover:border-primary/40">
+          <Link href={`/athkar/${prev.id}`} className="clay clay-press flex items-center gap-2 p-4 [--clay-r:1.5rem]">
             <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span>
               <span className="block text-xs text-muted-foreground">السابق</span>
@@ -85,7 +85,7 @@ export default async function CategoryPage({ params }: Props) {
         {next && (
           <Link
             href={`/athkar/${next.id}`}
-            className="flex items-center justify-end gap-2 rounded-xl border bg-card p-3 text-left hover:border-primary/40"
+            className="clay clay-press flex items-center justify-end gap-2 p-4 text-left [--clay-r:1.5rem]"
           >
             <span>
               <span className="block text-xs text-muted-foreground">التالي</span>

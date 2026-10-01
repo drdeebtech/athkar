@@ -27,3 +27,6 @@ export const resultsCount = (n: number) =>
 
 export const timesCount = (n: number) =>
   countNoun(n, { one: "مرة واحدة", two: "مرتان", few: "مرات", many: "مرة", hundred: "مرة" });
+
+export const situationsCount = (n: number) =>
+  countNoun(n, { one: "موقف واحد", two: "موقفان", few: "مواقف", many: "موقفًا", hundred: "موقف" });

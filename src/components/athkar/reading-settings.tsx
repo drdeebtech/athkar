@@ -130,10 +130,11 @@ export function ReadingSettingsButton() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => (open ? close(false) : setOpen(true))}
-        className="flex items-center gap-1.5 rounded-md px-3 py-2 hover:bg-white/10 focus-visible:ring-3 focus-visible:ring-accent/60"
+        className="clay-sm clay-press flex items-center gap-1.5 px-3.5 py-2 text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <Settings2 className="size-5" aria-hidden="true" />
-        <span>إعدادات القراءة</span>
+        <span className="hidden sm:inline">إعدادات القراءة</span>
+        <span className="sm:hidden">القراءة</span>
       </button>
       <div
         ref={panel}
@@ -142,11 +143,11 @@ export function ReadingSettingsButton() {
         aria-label="إعدادات القراءة"
         tabIndex={-1}
         hidden={!open}
-        className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl outline-none"
+        className="clay absolute left-0 top-full z-50 mt-3 w-76 p-5 text-popover-foreground outline-none [--clay-r:1.75rem]"
       >
         <div className="mb-3 flex items-center justify-between">
-          <p className="font-bold">إعدادات القراءة</p>
-          <button type="button" onClick={() => close(true)} aria-label="إغلاق" className="rounded-md p-1 hover:bg-muted">
+          <p className="font-display text-lg font-extrabold">إعدادات القراءة</p>
+          <button type="button" onClick={() => close(true)} aria-label="إغلاق" className="clay-sm clay-press grid size-8 place-items-center">
             <X className="size-4" aria-hidden="true" />
           </button>
         </div>
@@ -160,7 +161,7 @@ export function ReadingSettingsButton() {
                 aria-label="تكبير الخط"
                 disabled={settings.fontStep >= FONT_STEPS.length - 1}
                 onClick={() => update({ fontStep: settings.fontStep + 1 })}
-                className="rounded-lg border p-2 hover:bg-muted disabled:opacity-40"
+                className="clay-sm clay-press grid size-10 place-items-center disabled:pointer-events-none disabled:opacity-40"
               >
                 <Plus className="size-4" aria-hidden="true" />
               </button>
@@ -172,7 +173,7 @@ export function ReadingSettingsButton() {
                 aria-label="تصغير الخط"
                 disabled={settings.fontStep <= 0}
                 onClick={() => update({ fontStep: settings.fontStep - 1 })}
-                className="rounded-lg border p-2 hover:bg-muted disabled:opacity-40"
+                className="clay-sm clay-press grid size-10 place-items-center disabled:pointer-events-none disabled:opacity-40"
               >
                 <Minus className="size-4" aria-hidden="true" />
               </button>
@@ -184,7 +185,7 @@ export function ReadingSettingsButton() {
 
           <div>
             <p className="mb-2 text-muted-foreground">المظهر</p>
-            <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+            <div className="clay-inset grid grid-cols-3 gap-1 p-1.5 [--clay-r:1.25rem]">
               {THEME_OPTIONS.map(({ value, label, Icon }) => (
                 <button
                   key={value}
@@ -193,7 +194,7 @@ export function ReadingSettingsButton() {
                   onClick={() => update({ theme: value })}
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-md py-2 text-xs",
-                    settings.theme === value ? "bg-card font-bold shadow-sm" : "hover:bg-card/60",
+                    settings.theme === value ? "clay-sm font-bold [--clay-r:1rem]" : "rounded-2xl hover:bg-card/50",
                   )}
                 >
                   <Icon className="size-4" aria-hidden="true" />
@@ -221,7 +222,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       />
       <span
         aria-hidden="true"
-        className="relative h-6 w-11 rounded-full bg-muted-foreground/30 transition-colors after:absolute after:top-0.5 after:right-0.5 after:size-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:bg-primary peer-checked:after:-translate-x-5 peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50"
+        className="clay-inset relative h-7 w-12 transition-colors [--clay-r:9999px] after:absolute after:top-1 after:right-1 after:size-5 after:rounded-full after:bg-card after:shadow-[0_3px_6px_-2px_var(--clay-drop),inset_0_2px_3px_var(--clay-hi)] after:transition-transform peer-checked:bg-primary peer-checked:after:-translate-x-5 peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50"
       />
     </label>
   );
