@@ -1,6 +1,12 @@
+# Third-party notices
+
+This project started from ai-website-cloner-template
+(https://github.com/JCodesMore/ai-website-cloner-template), used under the MIT License:
+
+```
 MIT License
 
-Copyright (c) 2026 Dr Deeb
+Copyright (c) 2025 JCodesMore
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +25,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+Athkar texts: Quran and Sunnah, arranged as in Hisn al-Muslim by Sa'id bin Ali bin Wahf Al-Qahtani.
+Dataset: https://github.com/osamayy/azkar-db (no license file published; see /sources).
