@@ -77,14 +77,15 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset }:
         <button
           type="button"
           data-counter
-          key={counter.remaining}
           onClick={() => !done && onTap()}
           aria-disabled={done}
           aria-label={done ? "تم هذا الذكر" : `اضغط للعد، المتبقي ${counter.remaining}`}
           style={{ "--hue": done ? 150 : 60 } as React.CSSProperties}
           className={cn(
             "clay glaze flex h-16 flex-1 items-center justify-center gap-3 [--clay-r:9999px] select-none focus-visible:ring-3 focus-visible:ring-ring/50",
-            done ? "cursor-default" : "clay-press squish",
+            // Alternate the animation name so the squish replays on every tap without
+            // remounting the button (a remount would drop keyboard and screen-reader focus).
+            done ? "cursor-default" : cn("clay-press", counter.remaining % 2 ? "squish" : "squish-alt"),
           )}
         >
           {done ? (
@@ -130,11 +131,11 @@ function IconButton({
   return (
     <button
       type="button"
-      onClick={onClick}
-      disabled={disabled}
+      onClick={() => !disabled && onClick()}
+      aria-disabled={disabled}
       aria-label={label}
       title={label}
-      className="clay-sm clay-press grid size-12 shrink-0 place-items-center text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40"
+      className="clay-sm clay-press grid size-12 shrink-0 place-items-center text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-disabled:cursor-default aria-disabled:opacity-40"
     >
       {children}
     </button>
