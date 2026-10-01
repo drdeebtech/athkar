@@ -42,3 +42,8 @@ export function segmentText(text: string): TextSegment[] {
   push("plain", text.slice(cursor));
   return segments;
 }
+
+/** Text for the "hide diacritics" reading mode: no marks, alef wasla as plain alef. */
+export function plainReading(text: string): string {
+  return stripDiacritics(text).replace(/ٱ/g, "ا");
+}

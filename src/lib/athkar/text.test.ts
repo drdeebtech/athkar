@@ -43,3 +43,10 @@ describe("segmentText", () => {
     expect(segmentText("((ذكر))")).toEqual([{ kind: "hadith", text: "ذكر" }]);
   });
 });
+
+describe("plainReading", () => {
+  it("strips diacritics and turns alef wasla into a plain alef", async () => {
+    const { plainReading } = await import("./text");
+    expect(plainReading("مَلِكِ ٱلنَّاسِ")).toBe("ملك الناس");
+  });
+});

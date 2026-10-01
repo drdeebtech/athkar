@@ -47,3 +47,9 @@ next-env.d.ts
 
 # Local temp files
 temp/
+
+# test coverage
+/coverage
+
+# local browser QA artifacts
+.gstack/
