@@ -7,18 +7,35 @@ export interface SearchResult {
   readonly textMatches: number;
 }
 
+interface IndexEntry {
+  readonly category: Category;
+  readonly title: string;
+  readonly texts: readonly string[];
+}
+
+export type SearchIndex = readonly IndexEntry[];
+
 const MIN_QUERY_LENGTH = 2;
 
-/** Diacritics- and hamza-insensitive search over titles and zekr text. */
-export function searchCategories(categories: readonly Category[], query: string): SearchResult[] {
+/** Normalizes every title and text once so each query only does substring checks. */
+export function createSearchIndex(categories: readonly Category[]): SearchIndex {
+  return categories.map((category) => ({
+    category,
+    title: normalizeArabic(category.title),
+    texts: category.items.map((z) => normalizeArabic(z.text)),
+  }));
+}
+
+/** Diacritics- and hamza-insensitive search; title hits rank before text-only hits. */
+export function searchIndex(index: SearchIndex, query: string): SearchResult[] {
   const needle = normalizeArabic(query);
   if (needle.length < MIN_QUERY_LENGTH) return [];
 
-  return categories
-    .map((category) => ({
+  return index
+    .map(({ category, title, texts }) => ({
       category,
-      titleMatch: normalizeArabic(category.title).includes(needle),
-      textMatches: category.items.filter((z) => normalizeArabic(z.text).includes(needle)).length,
+      titleMatch: title.includes(needle),
+      textMatches: texts.filter((t) => t.includes(needle)).length,
     }))
     .filter((r) => r.titleMatch || r.textMatches > 0)
     .sort(
@@ -27,4 +44,8 @@ export function searchCategories(categories: readonly Category[], query: string)
         b.textMatches - a.textMatches ||
         a.category.id - b.category.id,
     );
+}
+
+export function searchCategories(categories: readonly Category[], query: string): SearchResult[] {
+  return searchIndex(createSearchIndex(categories), query);
 }

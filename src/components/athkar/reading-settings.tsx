@@ -1,7 +1,7 @@
 "use client";
 
 import { Minus, Moon, Plus, Settings2, Sun, SunMoon, X } from "lucide-react";
-import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import {
   DEFAULT_SETTINGS,
   FONT_STEPS,
@@ -39,14 +39,41 @@ function readStored(): ReadingSettings {
   }
 }
 
-export function ReadingSettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<ReadingSettings>(DEFAULT_SETTINGS);
+/* A tiny external store over localStorage, shared by every subscriber and synced across tabs. */
+let cache: ReadingSettings | null = null;
+const listeners = new Set<() => void>();
 
-  useEffect(() => {
-    // Sync React state with the value the pre-paint script already applied.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSettings(readStored());
-  }, []);
+const getSnapshot = (): ReadingSettings => (cache ??= readStored());
+const getServerSnapshot = (): ReadingSettings => DEFAULT_SETTINGS;
+
+function subscribe(onChange: () => void) {
+  listeners.add(onChange);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key !== SETTINGS_KEY) return;
+    cache = readStored();
+    applyToDocument(cache);
+    listeners.forEach((l) => l());
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(onChange);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+function commit(next: ReadingSettings) {
+  cache = next;
+  applyToDocument(next);
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+  } catch {
+    // Storage can be unavailable (private mode); settings still apply for this visit.
+  }
+  listeners.forEach((l) => l());
+}
+
+export function ReadingSettingsProvider({ children }: { children: React.ReactNode }) {
+  const settings = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
     if (settings.theme !== "system") return;
@@ -56,18 +83,7 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
     return () => mq.removeEventListener("change", onChange);
   }, [settings]);
 
-  const update = useCallback((patch: Partial<ReadingSettings>) => {
-    setSettings((current) => {
-      const next = updateSettings(current, patch);
-      applyToDocument(next);
-      try {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
-      } catch {
-        // Storage can be unavailable (private mode); settings still apply for this visit.
-      }
-      return next;
-    });
-  }, []);
+  const update = useCallback((patch: Partial<ReadingSettings>) => commit(updateSettings(getSnapshot(), patch)), []);
 
   return <SettingsContext.Provider value={{ settings, update }}>{children}</SettingsContext.Provider>;
 }
@@ -83,101 +99,111 @@ export function ReadingSettingsButton() {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const wrapper = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+
+  const close = useCallback((restoreFocus: boolean) => {
+    setOpen(false);
+    if (restoreFocus) trigger.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    const onClick = (e: MouseEvent) => {
-      if (!wrapper.current?.contains(e.target as Node)) setOpen(false);
+    panel.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close(true);
+    const onPointer = (e: PointerEvent) => {
+      if (!wrapper.current?.contains(e.target as Node)) close(false);
     };
     document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onClick);
+    document.addEventListener("pointerdown", onPointer);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("pointerdown", onPointer);
     };
-  }, [open]);
+  }, [open, close]);
 
   return (
     <div ref={wrapper} className="relative">
       <button
+        ref={trigger}
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? close(false) : setOpen(true))}
         className="flex items-center gap-1.5 rounded-md px-3 py-2 hover:bg-white/10 focus-visible:ring-3 focus-visible:ring-accent/60"
       >
         <Settings2 className="size-5" aria-hidden="true" />
         <span>إعدادات القراءة</span>
       </button>
-      {open && (
-        <div
-          id={panelId}
-          role="dialog"
-          aria-label="إعدادات القراءة"
-          className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl"
-        >
-          <div className="mb-3 flex items-center justify-between">
-            <p className="font-bold">إعدادات القراءة</p>
-            <button type="button" onClick={() => setOpen(false)} aria-label="إغلاق" className="rounded-md p-1 hover:bg-muted">
-              <X className="size-4" aria-hidden="true" />
-            </button>
+      <div
+        ref={panel}
+        id={panelId}
+        role="dialog"
+        aria-label="إعدادات القراءة"
+        tabIndex={-1}
+        hidden={!open}
+        className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl outline-none"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <p className="font-bold">إعدادات القراءة</p>
+          <button type="button" onClick={() => close(true)} aria-label="إغلاق" className="rounded-md p-1 hover:bg-muted">
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="space-y-4 text-sm">
+          <div>
+            <p className="mb-2 text-muted-foreground">حجم الخط</p>
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                aria-label="تكبير الخط"
+                disabled={settings.fontStep >= FONT_STEPS.length - 1}
+                onClick={() => update({ fontStep: settings.fontStep + 1 })}
+                className="rounded-lg border p-2 hover:bg-muted disabled:opacity-40"
+              >
+                <Plus className="size-4" aria-hidden="true" />
+              </button>
+              <span className="font-zekr text-lg" aria-live="polite">
+                {settings.fontStep + 1} / {FONT_STEPS.length}
+              </span>
+              <button
+                type="button"
+                aria-label="تصغير الخط"
+                disabled={settings.fontStep <= 0}
+                onClick={() => update({ fontStep: settings.fontStep - 1 })}
+                className="rounded-lg border p-2 hover:bg-muted disabled:opacity-40"
+              >
+                <Minus className="size-4" aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-4 text-sm">
-            <div>
-              <p className="mb-2 text-muted-foreground">حجم الخط</p>
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  aria-label="تكبير الخط"
-                  disabled={settings.fontStep >= FONT_STEPS.length - 1}
-                  onClick={() => update({ fontStep: settings.fontStep + 1 })}
-                  className="rounded-lg border p-2 hover:bg-muted disabled:opacity-40"
-                >
-                  <Plus className="size-4" aria-hidden="true" />
-                </button>
-                <span className="font-zekr text-lg" aria-live="polite">
-                  {settings.fontStep + 1} / {FONT_STEPS.length}
-                </span>
-                <button
-                  type="button"
-                  aria-label="تصغير الخط"
-                  disabled={settings.fontStep <= 0}
-                  onClick={() => update({ fontStep: settings.fontStep - 1 })}
-                  className="rounded-lg border p-2 hover:bg-muted disabled:opacity-40"
-                >
-                  <Minus className="size-4" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
+          <Toggle label="خط عريض" checked={settings.bold} onChange={(v) => update({ bold: v })} />
+          <Toggle label="إظهار التشكيل" checked={settings.diacritics} onChange={(v) => update({ diacritics: v })} />
 
-            <Toggle label="خط عريض" checked={settings.bold} onChange={(v) => update({ bold: v })} />
-            <Toggle label="إظهار التشكيل" checked={settings.diacritics} onChange={(v) => update({ diacritics: v })} />
-
-            <div>
-              <p className="mb-2 text-muted-foreground">المظهر</p>
-              <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
-                {THEME_OPTIONS.map(({ value, label, Icon }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={settings.theme === value}
-                    onClick={() => update({ theme: value })}
-                    className={cn(
-                      "flex flex-col items-center gap-1 rounded-md py-2 text-xs",
-                      settings.theme === value ? "bg-card font-bold shadow-sm" : "hover:bg-card/60",
-                    )}
-                  >
-                    <Icon className="size-4" aria-hidden="true" />
-                    {label}
-                  </button>
-                ))}
-              </div>
+          <div>
+            <p className="mb-2 text-muted-foreground">المظهر</p>
+            <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+              {THEME_OPTIONS.map(({ value, label, Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={settings.theme === value}
+                  onClick={() => update({ theme: value })}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-md py-2 text-xs",
+                    settings.theme === value ? "bg-card font-bold shadow-sm" : "hover:bg-card/60",
+                  )}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

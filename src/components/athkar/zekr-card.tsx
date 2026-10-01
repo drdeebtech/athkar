@@ -81,8 +81,9 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset }:
       <footer className="flex items-center gap-2 border-t px-3 py-3 sm:px-4">
         <button
           type="button"
-          onClick={onTap}
-          disabled={status === "done"}
+          data-counter
+          onClick={() => status !== "done" && onTap()}
+          aria-disabled={status === "done"}
           aria-label={status === "done" ? "تم هذا الذكر" : `اضغط للعد، المتبقي ${counter.remaining}`}
           className={cn(
             "flex h-14 flex-1 items-center justify-center gap-3 rounded-xl text-lg font-bold transition-colors select-none active:scale-[0.98]",

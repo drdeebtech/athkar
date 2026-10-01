@@ -13,6 +13,9 @@ declare global {
 
 const SLOT = process.env.NEXT_PUBLIC_ADSENSE_SLOT?.trim() || undefined;
 
+/** True only when both the AdSense client and slot are configured. */
+export const adsEnabled = Boolean(siteConfig.adsenseClient && SLOT);
+
 /** Loads AdSense only when a client id is configured. */
 export function AdsenseScript() {
   if (!siteConfig.adsenseClient) return null;
@@ -35,7 +38,7 @@ export function AdSlot({ className }: { className?: string }) {
   const pushed = useRef(false);
 
   useEffect(() => {
-    if (!siteConfig.adsenseClient || !SLOT || pushed.current) return;
+    if (!adsEnabled || pushed.current) return;
     pushed.current = true;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -44,7 +47,7 @@ export function AdSlot({ className }: { className?: string }) {
     }
   }, []);
 
-  if (!siteConfig.adsenseClient || !SLOT) return null;
+  if (!adsEnabled) return null;
 
   return (
     <aside aria-label="إعلان" className={cn("my-6 min-h-[280px] overflow-hidden rounded-xl border bg-muted/40", className)}>

@@ -28,15 +28,16 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
-/** Uses the native share sheet when available, otherwise WhatsApp. */
-export async function shareText(text: string, url: string): Promise<void> {
+/**
+ * Uses the native share sheet when available, otherwise opens WhatsApp.
+ * The WhatsApp window opens synchronously so it keeps the click's user gesture.
+ */
+export function shareText(text: string, url: string): void {
   if (typeof navigator.share === "function") {
-    try {
-      await navigator.share({ text, url });
-      return;
-    } catch (err) {
-      if ((err as DOMException)?.name === "AbortError") return;
-    }
+    navigator.share({ text, url }).catch(() => {
+      // Cancelled or unsupported payload: nothing else to do.
+    });
+    return;
   }
   window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, "_blank", "noopener,noreferrer");
 }

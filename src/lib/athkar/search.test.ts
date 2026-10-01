@@ -31,3 +31,13 @@ describe("searchCategories", () => {
     expect(res[0].titleMatch).toBe(true);
   });
 });
+
+describe("createSearchIndex", () => {
+  it("returns the same results as searchCategories from a prepared index", async () => {
+    const { createSearchIndex, searchIndex } = await import("./search");
+    const index = createSearchIndex(cats);
+    expect(searchIndex(index, "اذكار")).toEqual(searchCategories(cats, "اذكار"));
+    expect(searchIndex(index, "سخر لنا")[0].category.id).toBe(2);
+    expect(searchIndex(index, "x")).toEqual([]);
+  });
+});

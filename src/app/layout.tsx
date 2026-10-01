@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Amiri, IBM_Plex_Sans_Arabic } from "next/font/google";
-import Script from "next/script";
 import { AdsenseScript } from "@/components/athkar/ad-slot";
 import { ReadingSettingsProvider } from "@/components/athkar/reading-settings";
 import { SiteFooter } from "@/components/athkar/site-footer";
@@ -49,9 +48,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ar" dir="rtl" className={`${uiFont.variable} ${zekrFont.variable}`} suppressHydrationWarning>
       <head>
-        <Script id="athkar-pre-paint" strategy="beforeInteractive">
-          {PRE_PAINT_SCRIPT}
-        </Script>
+        {/* Runs synchronously before first paint; PRE_PAINT_SCRIPT is a build-time constant. */}
+        <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_SCRIPT }} />
         <AdsenseScript />
       </head>
       <body className="flex min-h-dvh flex-col">
