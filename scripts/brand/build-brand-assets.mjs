@@ -31,7 +31,16 @@ await (await square(logo, 512, 0.1, SAND)).flatten({ background: SAND }).png({ c
 await (await square(logo, 512, 0.2, SAND)).flatten({ background: SAND }).png({ compressionLevel: 9, palette: true, quality: 90, effort: 10 }).toFile(`${OUT}/public/brand/icon-maskable-512.png`);
 await sharp(logo).resize(160, 160, { fit: "contain", background: clear }).webp({ quality: 88, alphaQuality: 100 }).toFile(`${OUT}/public/brand/logo-mark.webp`);
 
-for (const [file, name, widths] of [["hero-rehal.png", "hero-rehal", [560, 960]], ["hero-beads.png", "hero-beads", [480, 800]]]) {
+// Hero widths (keep in step with ART in src/components/athkar/brand-art.tsx). The browser
+// picks the smallest file that covers slot * devicePixelRatio, so the steps are sized for
+// real phones: 560 for 2x phones, 720 for 2.6-3x Android, 800 and 880 for 3x iPhones and
+// 2x desktops, 960 as the largest. Every width is resized from the same trimmed 2K original
+// with the same encoder settings, so a width can be added without touching the others.
+const HEROES = [
+  ["hero-rehal.png", "hero-rehal", [560, 720, 800, 880, 960]],
+  ["hero-beads.png", "hero-beads", [480, 640, 800]],
+];
+for (const [file, name, widths] of HEROES) {
   const t = await (await trimmed(file)).png().toBuffer();
   for (const w of widths) {
     await sharp(t).resize({ width: w }).webp({ quality: 82, alphaQuality: 90, effort: 6 }).toFile(`${OUT}/public/brand/${name}-${w}.webp`);

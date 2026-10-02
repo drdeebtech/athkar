@@ -1,7 +1,7 @@
 import type { Metadata, ResolvingMetadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "@/components/athkar/ad-slot";
-import { BrandArt } from "@/components/athkar/brand-art";
+import { BrandArt, SLOT_SIZES } from "@/components/athkar/brand-art";
 import { JsonLd } from "@/components/athkar/json-ld";
 import { SearchBox } from "@/components/athkar/search-box";
 import { SectionGrid } from "@/components/athkar/section-grid";
@@ -51,7 +51,7 @@ export default function HomePage() {
             </nav>
           </div>
           <div className="rise order-first mx-auto w-[min(78%,22rem)] [--i:2] md:order-none md:w-full">
-            <BrandArt name="rehal" priority sizes="(min-width: 768px) 440px, 78vw" />
+            <BrandArt name="rehal" priority sizes={SLOT_SIZES.homeHero} />
           </div>
         </div>
       </section>
