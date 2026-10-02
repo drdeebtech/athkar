@@ -50,6 +50,11 @@ describe("tap", () => {
     expect(step.outcome).toEqual({ counted: true, completed: true, nextPending: 2, announcement: "تمّ الذكر 1" });
   });
 
+  it("points nowhere while the tapped zekr is still unfinished", () => {
+    const step = tap(createProgress([{ count: 3 }, { count: 1 }]), 0);
+    expect(step.outcome).toEqual({ counted: true, completed: false, nextPending: null, announcement: "الذكر 1: المتبقي 2" });
+  });
+
   it("never points back to an earlier unfinished zekr", () => {
     expect(tap(progressOf([2, 2], [1, 1]), 1).outcome.nextPending).toBeNull();
     expect(tap(progressOf([2, 2], [1, 1], [1, 0]), 1).outcome.nextPending).toBeNull();

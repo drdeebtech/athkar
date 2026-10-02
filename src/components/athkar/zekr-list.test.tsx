@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { click, render } from "@/test/dom";
+import { timesCount } from "@/lib/athkar/arabic";
 import type { Zekr } from "@/lib/athkar/types";
 import { ZekrList } from "./zekr-list";
 
@@ -28,8 +29,15 @@ const ADVANCE_DELAY_MS = 250;
 let cleanup: () => void = () => {};
 afterEach(() => cleanup());
 
-function renderList(list: readonly Zekr[], next?: { id: number; title: string }) {
-  const { container, unmount } = render(<ZekrList title="اختبار" items={list} next={next} />);
+interface RenderOptions {
+  readonly next?: { id: number; title: string };
+  /** Render under StrictMode, which calls state updaters twice. */
+  readonly strict?: boolean;
+}
+
+function renderList(list: readonly Zekr[], { next, strict = false }: RenderOptions = {}) {
+  const ui = <ZekrList title="اختبار" items={list} next={next} />;
+  const { container, unmount } = render(strict ? <StrictMode>{ui}</StrictMode> : ui);
   cleanup = unmount;
   const card = (id: string) => container.querySelector<HTMLElement>(`#zekr-${id}`)!;
   return {
@@ -76,6 +84,25 @@ describe("ZekrList counter accessibility", () => {
     expect(reset.getAttribute("aria-disabled")).toBe("true");
     expect(document.activeElement).toBe(reset);
     expect(counter().getAttribute("aria-label")).toContain("3");
+  });
+
+  it("shows the remaining count, keeps the target in the badge and alternates the squish", () => {
+    const { card, counterOf } = renderList(items);
+    const counter = counterOf("1-1");
+    const number = () => counter.querySelector("span")?.textContent;
+    const badge = () => card("1-1").querySelector("header")?.lastElementChild?.textContent;
+    const squish = () => ["squish", "squish-alt"].filter((name) => counter.classList.contains(name));
+    expect(squish()).toEqual(["squish"]);
+
+    click(counter);
+    expect(number()).toBe("2");
+    expect(badge()).toBe(timesCount(3));
+    expect(squish()).toEqual(["squish-alt"]);
+
+    click(counter);
+    expect(number()).toBe("1");
+    expect(badge()).toBe(timesCount(3));
+    expect(squish()).toEqual(["squish"]);
   });
 
   it("announces the remaining count in a polite live region", () => {
@@ -157,6 +184,32 @@ describe("ZekrList reading progress", () => {
     expect(vibrate).toHaveBeenCalledTimes(2);
   });
 
+  it("vibrates and advances once per completing tap, even when React calls updaters twice", () => {
+    const vibrate = vi.fn(() => true);
+    Object.defineProperty(navigator, "vibrate", { configurable: true, value: vibrate });
+    const { counterOf } = renderList(singles, { strict: true });
+    const scroll = vi.mocked(Element.prototype.scrollIntoView);
+
+    click(counterOf("2-1"));
+    vi.advanceTimersByTime(ADVANCE_DELAY_MS);
+    expect(vibrate).toHaveBeenCalledTimes(1);
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(counterOf("2-2"));
+  });
+
+  it("scrolls to the next zekr without smooth motion when the reader prefers reduced motion", () => {
+    const { card, counterOf } = renderList(singles);
+    const scroll = vi.mocked(Element.prototype.scrollIntoView);
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(prefers-reduced-motion: reduce)", media: query }));
+
+    click(counterOf("2-1"));
+    vi.advanceTimersByTime(ADVANCE_DELAY_MS);
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll.mock.contexts[0]).toBe(card("2-2"));
+    expect(scroll).toHaveBeenCalledWith({ behavior: "auto", block: "start" });
+    expect(document.activeElement).toBe(counterOf("2-2"));
+  });
+
   it("ignores taps on a finished zekr and keeps its announcement", () => {
     const { counterOf, announcement } = renderList(singles);
     const first = counterOf("2-1");
@@ -167,7 +220,7 @@ describe("ZekrList reading progress", () => {
   });
 
   it("tracks progress and congratulates with a link to the next situation when all are done", () => {
-    const { counterOf, doneText, percent, status } = renderList(singles, { id: 7, title: "أذكار المساء" });
+    const { counterOf, doneText, percent, status } = renderList(singles, { next: { id: 7, title: "أذكار المساء" } });
     expect(doneText()).toBe("أتممت 0 من 3");
     expect(percent()).toBe("0");
     expect(status().childElementCount).toBe(0);
