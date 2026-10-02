@@ -6,9 +6,14 @@ declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
 }
 
-/** Minimal render helper for jsdom component tests (no extra test library). */
+/**
+ * Minimal render helper for jsdom component tests (no extra test library).
+ * jsdom has no layout engine, so it lacks matchMedia and scrollIntoView; both are
+ * stubbed here, and each render gets a fresh scrollIntoView mock to assert on.
+ */
 export function render(ui: ReactNode): { container: HTMLElement; unmount: () => void } {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  Element.prototype.scrollIntoView = vi.fn();
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: false,
     media: query,
