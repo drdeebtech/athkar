@@ -2,8 +2,11 @@ import localFont from "next/font/local";
 
 // The reading face ("Athkar Naskh", our renamed subset of Scheherazade New; see
 // src/app/layout.tsx) sets the title and the adhkar, and nothing outside situation
-// pages uses it. Declaring it in this layout makes Next preload it on these pages
-// only, where the title is on the first screen, and keeps it off every other page.
+// pages uses it. Declaring it in this layout makes Next preload it on these pages,
+// where the title is on the first screen, and keeps it out of every other page's
+// HTML and CSS. A page that prefetches a situation link (the home page's quick
+// links) still fetches the files after its load event, from the font hints in the
+// prefetched route, which warms the cache for the next page.
 // The Times New Roman fallback gets size-adjusted metrics, so the swap moves little.
 const naskhFont = localFont({
   variable: "--font-naskh",
