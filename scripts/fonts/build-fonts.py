@@ -103,7 +103,8 @@ def main() -> None:
     options.glyph_names = False
     shipped: dict[str, dict[str, object]] = {}
     for ttf, woff2 in FONTS.items():
-        font = TTFont(src / ttf)
+        # Keep upstream head.modified so a rebuild of the same sources gives the same bytes.
+        font = TTFont(src / ttf, recalcTimestamp=False)
         keep = family_codepoints(woff2.split("-")[0])
         subsetter = subset.Subsetter(options)
         subsetter.populate(unicodes=sorted(keep & set(font.getBestCmap())))
