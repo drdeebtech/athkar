@@ -1,7 +1,8 @@
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { hasMorePages, isEntrypoint, run, stripJsonComments, validateToken } from "./cf-build-logs";
 
@@ -264,13 +265,19 @@ describe("run", () => {
     ]);
   });
 
-  it("sends the token only as a bearer header, with a request timeout", async () => {
+  it("sends the token only as a bearer header, with a 30s timeout on each request", async () => {
     const api = cloudflare({ builds: pages([newest]), logs: () => ({}) });
-    await runCli({ api });
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    try {
+      await runCli({ api });
+      expect(timeout.mock.calls).toEqual([[30_000], [30_000], [30_000]]);
+      api.calls.forEach(({ init }, i) => expect(init?.signal).toBe(timeout.mock.results[i]?.value));
+    } finally {
+      timeout.mockRestore();
+    }
     expect(api.calls).toHaveLength(3);
     for (const { url, init } of api.calls) {
       expect(new Headers(init?.headers).get("Authorization")).toBe(`Bearer ${FAKE_CREDENTIAL}`);
-      expect(init?.signal).toBeInstanceOf(AbortSignal);
       expect(url.href).not.toContain(FAKE_CREDENTIAL);
     }
   });
@@ -290,6 +297,26 @@ describe("run", () => {
     const api = cloudflare({ logs: () => ({ lines: ["only these"] }) });
     expect(await runCli({ argv: [OLDER], api })).toEqual({ code: 0, out: ["only these"], err: [], tokenReads: 1 });
     expect(requested(api)).toEqual([`/client/v4/accounts/${ACCOUNT}/builds/builds/${OLDER}/logs`]);
+  });
+
+  it("encodes a build UUID taken from the API before putting it in the logs path", async () => {
+    // Unlike a UUID from the command line, this one is never validated, so only encoding
+    // keeps it inside its path segment.
+    const api = cloudflare({
+      builds: pages([{ build_uuid: "../x?y", created_on: "2026-10-02T10:00:00Z" }]),
+      logs: () => ({}),
+    });
+    expect(await runCli({ api })).toEqual({
+      code: 0,
+      out: ["Build ../x?y", "Branch ?  commit ?  ", RULE],
+      err: [],
+      tokenReads: 1,
+    });
+    expect(requested(api)).toEqual([
+      `/client/v4/accounts/${ACCOUNT}/workers/scripts`,
+      `/client/v4/accounts/${ACCOUNT}/builds/workers/${WORKER_TAG}/builds?page=1&per_page=50`,
+      `/client/v4/accounts/${ACCOUNT}/builds/builds/..%2Fx%3Fy/logs`,
+    ]);
   });
 
   it("treats an empty argument as no build id and looks up the latest build", async () => {
@@ -318,6 +345,39 @@ describe("run", () => {
       `/client/v4/accounts/${ACCOUNT}/builds/workers/${WORKER_TAG}/builds?page=2&per_page=50`,
       `/client/v4/accounts/${ACCOUNT}/builds/builds/${MAIN_LATEST}/logs`,
     ]);
+  });
+
+  it("--branch and the header use the trigger's branch over the top-level one", async () => {
+    const bothBranches: BuildFixture = {
+      build_uuid: NEWEST,
+      created_on: "2026-10-02T10:00:00Z",
+      branch: "old-name",
+      build_trigger_metadata: { branch: "main", commit_hash: "0a1b2c3d4e5f", commit_message: "fix: main" },
+    };
+    const api = cloudflare({ builds: pages([bothBranches]), logs: () => ({}) });
+    expect(await runCli({ argv: ["--branch", "main"], api })).toEqual({
+      code: 0,
+      out: [`Build ${NEWEST}`, "Branch main  commit 0a1b2c3  fix: main", RULE],
+      err: [],
+      tokenReads: 1,
+    });
+  });
+
+  it.each<[string, readonly BuildFixture[]]>([
+    [
+      "created_on, which wins over created_at",
+      [
+        { build_uuid: OLDER, created_on: "2026-10-01T10:00:00Z", created_at: "2026-10-03T10:00:00Z" },
+        { build_uuid: NEWEST, created_on: "2026-10-02T10:00:00Z" },
+      ],
+    ],
+    [
+      "timestamp, counting a build without one as the oldest",
+      [{ build_uuid: OLDER }, { build_uuid: NEWEST, created_on: "2026-10-02T10:00:00Z" }],
+    ],
+  ])("picks the latest build by %s", async (_, builds) => {
+    const api = cloudflare({ builds: pages(builds), logs: () => ({}) });
+    expect((await runCli({ api })).out[0]).toBe(`Build ${NEWEST}`);
   });
 
   it("stops paging through builds after 20 pages", async () => {
@@ -595,6 +655,28 @@ describe("run", () => {
       out: [],
       err: [`cf-build-logs: /accounts/${ACCOUNT}/workers/scripts: ${why}`],
       tokenReads: 1,
+    });
+  });
+});
+
+describe("the command line", () => {
+  const script = fileURLToPath(new URL("./cf-build-logs.ts", import.meta.url));
+
+  // Invalid arguments fail before the token is read, and this token would fail validation
+  // anyway, so the child can never reach the Keychain or the network.
+  it.each<[readonly string[], string]>([
+    [["--branch"], "cf-build-logs: --branch needs a value\n"],
+    [["\u001b[31mbad\u0007"], 'cf-build-logs: "[31mbad" is not a build UUID\n'],
+  ])("prints the cleaned error for %j to stderr and exits 1", (args, stderr) => {
+    const child = spawnSync(process.execPath, ["--no-warnings", script, ...args], {
+      encoding: "utf8",
+      env: { ...process.env, CLOUDFLARE_BUILDS_API_TOKEN: "not a token" },
+      timeout: 10_000,
+    });
+    expect({ status: child.status, stdout: child.stdout, stderr: child.stderr }).toEqual({
+      status: 1,
+      stdout: "",
+      stderr,
     });
   });
 });
