@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { click, render } from "@/test/dom";
 import type { Zekr } from "@/lib/athkar/types";
@@ -41,6 +42,13 @@ function renderList(list: readonly Zekr[], next?: { id: number; title: string })
     status: () => container.querySelector<HTMLElement>('[role="status"]')!,
     resetAll: () => [...container.querySelectorAll("button")].find((b) => b.textContent?.includes("البدء من جديد"))!,
   };
+}
+
+/** Clicks each element in turn within one task, before React re-renders. */
+function clickInOneTask(...elements: readonly HTMLElement[]) {
+  act(() => {
+    for (const element of elements) element.click();
+  });
 }
 
 function setup() {
@@ -216,5 +224,36 @@ describe("ZekrList reading progress", () => {
     click(card("3-1").querySelector<HTMLButtonElement>('button[aria-label="إعادة العدّ"]')!);
     expect(announcement()).toBe("أُعيد عدّ الذكر 1");
     expect(counterOf("3-1").getAttribute("aria-label")).toBe("اضغط للعد، المتبقي 2");
+  });
+});
+
+describe("ZekrList taps made before React re-renders", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("counts both taps on the same counter", () => {
+    const { counterOf, announcement } = renderList(items);
+    const first = counterOf("1-1");
+    clickInOneTask(first, first);
+    expect(first.getAttribute("aria-label")).toBe("اضغط للعد، المتبقي 1");
+    expect(first.querySelector("span")?.textContent).toBe("1");
+    expect(announcement()).toBe("الذكر 1: المتبقي 1");
+  });
+
+  it("counts a tap on each of two counters", () => {
+    const { counterOf, announcement } = renderList(items);
+    clickInOneTask(counterOf("1-1"), counterOf("1-2"));
+    expect(counterOf("1-1").getAttribute("aria-label")).toBe("اضغط للعد، المتبقي 2");
+    expect(counterOf("1-2").getAttribute("aria-label")).toBe("اضغط للعد، المتبقي 2");
+    expect(announcement()).toBe("الذكر 2: المتبقي 2");
+  });
+
+  it("keeps the completion announcement when the finished counter is tapped again", () => {
+    const { counterOf, announcement, doneText } = renderList(singles);
+    const first = counterOf("2-1");
+    clickInOneTask(first, first);
+    expect(first.getAttribute("aria-label")).toBe("تم هذا الذكر");
+    expect(doneText()).toBe("أتممت 1 من 3");
+    expect(announcement()).toBe("تمّ الذكر 1");
   });
 });

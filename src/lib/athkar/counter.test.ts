@@ -55,11 +55,13 @@ describe("tap", () => {
     expect(tap(progressOf([2, 2], [1, 1], [1, 0]), 1).outcome.nextPending).toBeNull();
   });
 
-  it("ignores a tap on a finished zekr and announces nothing", () => {
+  it("ignores a tap on a finished zekr and leaves the announcement as it was", () => {
+    // A second tap in the same task reaches a zekr the first one finished; it must
+    // not clear the completion message from the live region.
     const progress = progressOf([3, 1], [2, 0]);
     const step = tap(progress, 1);
     expect(step.progress).toBe(progress);
-    expect(step.outcome).toEqual({ ...uncounted, announcement: "" });
+    expect(step.outcome).toEqual({ ...uncounted, announcement: null });
   });
 });
 

@@ -2,7 +2,7 @@
 
 import { PartyPopper, RotateCcw } from "lucide-react";
 import Link from "next/link";
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import {
   createProgress,
   reset,
@@ -39,14 +39,18 @@ function advanceTo(id: string) {
 /** A situation's adhkar with tap counters, overall progress and the all-done message. */
 export function ZekrList({ title, items, next }: ZekrListProps) {
   const [progress, setProgress] = useState<ReadingProgress>(() => createProgress(items));
+  // The progress after the latest step, ahead of `progress` until React re-renders,
+  // so two taps in one task both count.
+  const latest = useRef(progress);
   // Screen readers do not reliably re-read a focused button whose label changed,
   // so each tap is also announced here.
   const [announcement, setAnnouncement] = useState("");
 
-  // Each step is computed from this render's progress, so its outcome and the next
-  // state agree. Effects run here rather than in a state updater, which React may
-  // call more than once.
-  const apply = ({ progress: nextProgress, outcome }: ProgressStep) => {
+  // Each step's outcome and next state come from the same progress. Effects run here
+  // rather than in a state updater, which React may call more than once.
+  const apply = (event: (current: ReadingProgress) => ProgressStep) => {
+    const { progress: nextProgress, outcome } = event(latest.current);
+    latest.current = nextProgress;
     setProgress(nextProgress);
     if (outcome.announcement !== null) setAnnouncement(outcome.announcement);
 
@@ -72,7 +76,7 @@ export function ZekrList({ title, items, next }: ZekrListProps) {
           <button
             type="button"
             aria-disabled={!canResetAll}
-            onClick={() => canResetAll && apply(resetAll(progress))}
+            onClick={() => canResetAll && apply(resetAll)}
             className="clay-sm clay-press flex items-center gap-1.5 px-3 py-1.5 text-muted-foreground hover:text-foreground aria-disabled:pointer-events-none aria-disabled:opacity-40"
           >
             <RotateCcw className="size-4" aria-hidden="true" />
@@ -102,8 +106,8 @@ export function ZekrList({ title, items, next }: ZekrListProps) {
                 total={items.length}
                 title={title}
                 counter={progress[i]}
-                onTap={() => apply(tap(progress, i))}
-                onReset={() => apply(reset(progress, i))}
+                onTap={() => apply((current) => tap(current, i))}
+                onReset={() => apply((current) => reset(current, i))}
               />
             </li>
             {adsEnabled && (i + 1) % AD_EVERY === 0 && i + 1 < items.length && (

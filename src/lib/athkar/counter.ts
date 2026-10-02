@@ -76,11 +76,11 @@ export function canReset(counter: CounterState): boolean {
 
 /**
  * Counts one recitation of the zekr at `index`. A tap on a finished zekr is
- * ignored: the same progress comes back with an empty announcement.
+ * ignored: the same progress comes back and the announcement is left as it was.
  */
 export function tap(progress: ReadingProgress, index: number): ProgressStep {
   const counter = progress[index];
-  if (isDone(counter)) return { progress, outcome: { ...QUIET, announcement: "" } };
+  if (isDone(counter)) return { progress, outcome: QUIET };
 
   const n = index + 1;
   const left = counter.remaining - 1;
