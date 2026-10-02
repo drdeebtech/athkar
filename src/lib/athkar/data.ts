@@ -45,7 +45,10 @@ export function getSections(): SectionWithCategories[] {
   })).filter((s) => s.categories.length > 0);
 }
 
-/** Every category paired with its section, in reading order (section order, then id). */
+/**
+ * Every category paired with its section, in reading order: section order,
+ * then the order categories first appear in the source within each section.
+ */
 function readingOrder(): readonly Pick<Situation, "category" | "section">[] {
   return getSections().flatMap(({ categories, ...section }) => categories.map((category) => ({ category, section })));
 }
