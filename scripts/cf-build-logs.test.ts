@@ -669,6 +669,23 @@ describe("run", () => {
     });
   });
 
+  it.each<[string, Error, string]>([
+    [
+      "drops the connection",
+      new Error(`socket reset while sending Authorization: Bearer ${FAKE_CREDENTIAL}`),
+      "network error",
+    ],
+    ["times out", new DOMException(`aborted while reading Bearer ${FAKE_CREDENTIAL}`, "TimeoutError"), "timed out after 30s"],
+  ])("maps a response body that %s mid-read like a failed request, without its message", async (_, error, why) => {
+    const api = fakeApi(() => new Response(new ReadableStream({ pull: (controller) => controller.error(error) })));
+    expect(await runCli({ api })).toEqual({
+      code: 1,
+      out: [],
+      err: [`cf-build-logs: /accounts/${ACCOUNT}/workers/scripts: ${why}`],
+      tokenReads: 1,
+    });
+  });
+
   it.each<[string, () => Response, string]>([
     [
       "Cloudflare's error list",

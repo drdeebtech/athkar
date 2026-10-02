@@ -82,6 +82,13 @@ interface LogPage {
   readonly truncated?: boolean;
 }
 
+/** One HTTP response with its body already read. */
+interface RawResponse {
+  readonly ok: boolean;
+  readonly status: number;
+  readonly text: string;
+}
+
 /** One Cloudflare account, read with one token. */
 interface Account {
   readonly id: string;
@@ -275,7 +282,7 @@ async function getResult<T>(account: Account, path: string): Promise<T> {
 /** GETs one API path; an HTTP error or unusable body becomes an error naming the path. */
 async function request<T>(account: Account, path: string): Promise<ApiBody<T>> {
   const res = await send(account, path);
-  const body = parseApiBody<T>(await res.text());
+  const body = parseApiBody<T>(res.text);
   if (!res.ok || !body.success) {
     const errors = "errors" in body ? body.errors : undefined;
     const why = errors?.map((e) => `${e.code} ${e.message}`).join("; ") || `HTTP ${res.status}`;
@@ -284,14 +291,17 @@ async function request<T>(account: Account, path: string): Promise<ApiBody<T>> {
   return body;
 }
 
-async function send(account: Account, path: string): Promise<Response> {
+/** Fetches one API path with the token and reads the whole body; a transport failure names only the path. */
+async function send(account: Account, path: string): Promise<RawResponse> {
   try {
-    return await account.fetch(`${API}${path}`, {
+    const res = await account.fetch(`${API}${path}`, {
       headers: { Authorization: `Bearer ${account.token}` },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
+    // The body streams in after the headers, so reading it can fail or time out too.
+    return { ok: res.ok, status: res.status, text: await res.text() };
   } catch (err) {
-    // Never surface fetch's own message: it can quote request headers (the token).
+    // Never surface the transport's own message: it can quote request headers (the token).
     const timedOut = err instanceof Error && err.name === "TimeoutError";
     throw new Error(`${path}: ${timedOut ? `timed out after ${REQUEST_TIMEOUT_MS / 1000}s` : "network error"}`);
   }
