@@ -357,3 +357,16 @@ describe("ZekrList taps made before React re-renders", () => {
     expect(announcement()).toBe("تمّ الذكر 1");
   });
 });
+
+describe("ZekrList marked text", () => {
+  it("renders hadith and Quran in their own spans, without the source markers", () => {
+    const { card } = renderList([
+      { id: "4-1", text: "قال ((مَنْ قَالَ سُبْحَانَ اللهِ)) ثم قرأ ﴿قُلْ هُوَ اللَّهُ أَحَدٌ﴾ ثلاثاً", count: 1 },
+    ]);
+    const spans = (selector: string) => [...card("4-1").querySelectorAll(selector)].map((s) => s.textContent);
+    // The (( )) and ﴿ ﴾ come back from CSS ::before/::after on these classes, so the
+    // class is what gives hadith a cue other than colour and keeps Quran framed.
+    expect(spans("span.seg-hadith")).toEqual(["مَنْ قَالَ سُبْحَانَ اللهِ"]);
+    expect(spans("span.seg-quran")).toEqual(["قُلْ هُوَ اللَّهُ أَحَدٌ"]);
+  });
+});
