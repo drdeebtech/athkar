@@ -5,7 +5,10 @@ import { createContext, useCallback, useContext, useEffect, useId, useRef, useSt
 import {
   DEFAULT_SETTINGS,
   FONT_STEPS,
+  PREFERS_DARK_QUERY,
+  ROOT_SETTINGS_CONSTANTS,
   SETTINGS_KEY,
+  applySettingsToRoot,
   parseSettings,
   updateSettings,
   type ReadingSettings,
@@ -23,13 +26,9 @@ const SettingsContext = createContext<SettingsContextValue>({ settings: DEFAULT_
 
 export const useReadingSettings = () => useContext(SettingsContext);
 
+// The same function and constants as the pre-paint script, so first load and later changes agree.
 function applyToDocument(s: ReadingSettings) {
-  const root = document.documentElement;
-  root.dataset.font = String(s.fontStep);
-  if (s.bold) root.dataset.bold = "on";
-  else delete root.dataset.bold;
-  const dark = s.theme === "dark" || (s.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-  root.classList.toggle("dark", dark);
+  applySettingsToRoot(document.documentElement, s, matchMedia(PREFERS_DARK_QUERY).matches, ROOT_SETTINGS_CONSTANTS);
 }
 
 function readStored(): ReadingSettings {
@@ -78,7 +77,7 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (settings.theme !== "system") return;
-    const mq = matchMedia("(prefers-color-scheme: dark)");
+    const mq = matchMedia(PREFERS_DARK_QUERY);
     const onChange = () => applyToDocument(settings);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);

@@ -66,9 +66,7 @@ describe("font scale in globals.css", () => {
     expect(cssValue(".zekr-text", "font-size")).toContain("var(--zekr-size");
   });
 
-  it("renders each FONT_STEPS size for its step", () => {
-    FONT_STEPS.forEach((size, step) => {
-      expect(cssValue(`html[data-font="${step}"]`, "--zekr-size")).toBe(size);
-    });
+  it("declares --zekr-size only as that fallback, leaving the scale to FONT_STEPS", () => {
+    expect(GLOBALS_CSS.match(/--zekr-size\s*:/g)).toHaveLength(1);
   });
 });

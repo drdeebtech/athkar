@@ -6,13 +6,20 @@
  */
 import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PRE_PAINT_SCRIPT, SETTINGS_KEY } from "@/lib/athkar/settings";
+import {
+  FONT_STEPS,
+  PRE_PAINT_SCRIPT,
+  ROOT_SETTINGS_CONSTANTS,
+  SETTINGS_KEY,
+  applySettingsToRoot,
+} from "@/lib/athkar/settings";
 import { render } from "@/test/dom";
 import { ReadingSettingsProvider } from "./reading-settings";
 
 interface RootState {
   readonly className: string;
   readonly attributes: Readonly<Record<string, string>>;
+  readonly zekrSize: string;
 }
 
 const root = () => document.documentElement;
@@ -28,6 +35,7 @@ function recordRoot(): RootState {
   return {
     className: el.className,
     attributes: Object.fromEntries(el.getAttributeNames().map((name) => [name, el.getAttribute(name) ?? ""])),
+    zekrSize: el.style.getPropertyValue("--zekr-size"),
   };
 }
 
@@ -74,6 +82,23 @@ function runRuntime(stored: string | null, prefersDark: boolean): RootState {
   }
 }
 
+/** Parses a stored string as the pre-paint script does: unreadable JSON counts as missing. */
+function parseStored(stored: string | null): unknown {
+  if (stored === null) return null;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+}
+
+/** Calls an apply function directly with the parsed, unvalidated stored value. */
+function runDirect(apply: typeof applySettingsToRoot, stored: string | null, prefersDark: boolean): RootState {
+  resetRoot();
+  apply(root(), parseStored(stored), prefersDark, ROOT_SETTINGS_CONSTANTS);
+  return recordRoot();
+}
+
 afterEach(() => {
   resetRoot();
   localStorage.clear();
@@ -110,10 +135,78 @@ const THEME_AND_BOLD: readonly ThemeAndBoldCase[] = [
   { label: "a JSON array", stored: "[1,2]", prefersDark: true, dark: true, bold: false },
 ];
 
+const STORED: ReadonlyArray<readonly [label: string, stored: string | null]> = [
+  ["missing settings", null],
+  ["a dark theme", json({ theme: "dark" })],
+  ["a light theme", json({ theme: "light" })],
+  ["the system theme", json({ theme: "system" })],
+  ...FONT_STEPS.map((_size, step) => [`font step ${step}`, json({ fontStep: step })] as const),
+  ["bold on", json({ bold: true })],
+  ["bold off", json({ bold: false })],
+  ["a literal null", "null"],
+  ["invalid JSON", "{"],
+  ["an empty string", ""],
+  ["font step 99", json({ fontStep: 99 })],
+  ["font step -1", json({ fontStep: -1 })],
+  ["a non-number font step", json({ fontStep: "3" })],
+  ["an unknown theme", json({ theme: "neon" })],
+];
+
+const MATRIX = STORED.flatMap(([label, stored]) =>
+  [false, true].map((prefersDark) => ({ label, stored, prefersDark })),
+);
+
+describe("pre-paint script and runtime path", () => {
+  it.each(MATRIX)("leave <html> identical for $label (prefers dark: $prefersDark)", ({ stored, prefersDark }) => {
+    expect(runPrePaint(stored, prefersDark)).toEqual(runRuntime(stored, prefersDark));
+  });
+});
+
+describe("applySettingsToRoot", () => {
+  it.each(MATRIX)("validates $label like parseSettings (prefers dark: $prefersDark)", ({ stored, prefersDark }) => {
+    expect(runDirect(applySettingsToRoot, stored, prefersDark)).toEqual(runRuntime(stored, prefersDark));
+  });
+
+  it("references nothing outside its own source, so it can be inlined", () => {
+    // Called outside any try/catch: an outside reference fails loudly here instead of silently in the page head.
+    const isolated = new Function(`return (${applySettingsToRoot.toString()});`)() as typeof applySettingsToRoot;
+    MATRIX.forEach(({ stored, prefersDark }) => {
+      expect(runDirect(isolated, stored, prefersDark)).toEqual(runDirect(applySettingsToRoot, stored, prefersDark));
+    });
+  });
+});
+
+// Literal on purpose: the sizes readers have always seen per step; FONT_STEPS must not drift from them.
+const RENDERED_SIZES = ["1.25rem", "1.5rem", "1.75rem", "2.05rem", "2.4rem"];
+
+const FONT_SIZE: ReadonlyArray<readonly [label: string, stored: string | null, size: string]> = [
+  ["missing settings", null, "1.75rem"],
+  ...RENDERED_SIZES.map((size, step) => [`font step ${step}`, json({ fontStep: step }), size] as const),
+  ["font step 99", json({ fontStep: 99 }), "1.75rem"],
+  ["invalid JSON", "{", "1.75rem"],
+];
+
+const UNREADABLE = [
+  ["a literal null", "null"],
+  ["invalid JSON", "{"],
+] as const;
+
 describe.each(PATHS)("%s", (_path, run) => {
   it.each(THEME_AND_BOLD)("applies theme and bold for $label (prefers dark: $prefersDark)", (c) => {
     const state = run(c.stored, c.prefersDark);
     expect(state.className.split(" ").includes("dark")).toBe(c.dark);
     expect(state.attributes["data-bold"]).toBe(c.bold ? "on" : undefined);
+  });
+
+  it.each(FONT_SIZE)("sets --zekr-size for %s to %s", (_label, stored, size) => {
+    const state = run(stored, false);
+    expect(state.zekrSize).toBe(size);
+    expect(state.attributes["data-font"]).toBeUndefined();
+  });
+
+  it.each(UNREADABLE)("resolves %s like missing settings", (_label, stored) => {
+    const state = run(stored, true);
+    expect(state).toEqual(run(null, true));
+    expect(state.className).toBe("dark");
   });
 });
