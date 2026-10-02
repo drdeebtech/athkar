@@ -6,8 +6,25 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
+      # @vitest/coverage-v8 pins an exact vitest peer, so separate PRs for the
+      # two can never install. Keep every vitest package in one PR.
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # eslint-config-next 16.3 bundles eslint-plugin-react 7.37, which supports
+      # ESLint up to 9 ("contextOrFilename.getFilename is not a function" on 10).
+      # Remove once eslint-config-next supports ESLint 10.
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
+      # The installed typescript-eslint (8.57, via eslint-config-next) supports
+      # TypeScript below 6.0; the newest (8.71) supports below 6.1, and none
+      # supports 7 ("typescript-eslint does not support TS 7.0").
+      # Raise to ">=6.1.0" when the lockfile moves to typescript-eslint >= 8.71
+      # together with TypeScript 6.0; remove once TypeScript 7 is supported.
+      - dependency-name: typescript
+        versions: [">=6.0.0"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
