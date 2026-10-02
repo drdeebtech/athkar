@@ -112,7 +112,8 @@ interface BuildsPage {
 }
 
 interface LogsPage {
-  readonly lines?: readonly unknown[];
+  // Not typed as an array: some tests send the malformed shapes a broken API could.
+  readonly lines?: unknown;
   readonly cursor?: string;
   readonly truncated?: boolean;
 }
@@ -437,6 +438,46 @@ describe("run", () => {
     expect(result.out).toHaveLength(200);
     expect(result.out.at(-1)).toBe("page 199");
     expect(result.err).toEqual(["cf-build-logs: stopped after 200 log pages"]);
+  });
+
+  it.each<[string, unknown]>([
+    ["a string", "abc"],
+    ["an object", { a: 1 }],
+    ["a number", 5],
+  ])("exits 1 when log lines come back as %s instead of a list", async (_, lines) => {
+    const api = cloudflare({ logs: () => ({ lines }) });
+    expect(await runCli({ argv: [NEWEST], api })).toEqual({
+      code: 1,
+      out: [],
+      err: ["cf-build-logs: lines.map is not a function"],
+      tokenReads: 1,
+    });
+  });
+
+  // V8's own TypeError text, exactly as the script printed it before run(deps).
+  it.each<[string, unknown, string]>([
+    ["an object", { a: 1 }, "Spread syntax requires ...iterable[Symbol.iterator] to be a function"],
+    ["null", null, "body.result is not iterable (cannot read property null)"],
+  ])("exits 1 when a page of builds is %s instead of a list", async (_, result, message) => {
+    const api = fakeApi((url) =>
+      url.pathname.endsWith("/workers/scripts") ? ok([{ id: "athkar", tag: WORKER_TAG }]) : ok(result),
+    );
+    expect(await runCli({ api })).toEqual({ code: 1, out: [], err: [`cf-build-logs: ${message}`], tokenReads: 1 });
+  });
+
+  it("pages with & when the worker tag already put a query in the builds path", async () => {
+    // The tag from the API goes into the path unencoded, so it can carry its own "?".
+    const api = fakeApi((url) => {
+      if (url.pathname.endsWith("/workers/scripts")) return ok([{ id: "athkar", tag: "ab?x=1" }]);
+      if (url.pathname.endsWith("/logs")) return ok({});
+      return ok([newest]);
+    });
+    expect(await runCli({ api })).toEqual({ code: 0, out: newestHeader, err: [], tokenReads: 1 });
+    expect(requested(api)).toEqual([
+      `/client/v4/accounts/${ACCOUNT}/workers/scripts`,
+      `/client/v4/accounts/${ACCOUNT}/builds/workers/ab?x=1/builds&page=1&per_page=50`,
+      `/client/v4/accounts/${ACCOUNT}/builds/builds/${NEWEST}/logs`,
+    ]);
   });
 
   it.each<[readonly string[], string]>([

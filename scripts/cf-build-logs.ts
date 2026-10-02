@@ -231,7 +231,9 @@ async function printLogs(account: Account, uuid: string, out: Sink, err: Sink): 
   for (let n = 0; n < MAX_LOG_PAGES; n++) {
     const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
     const page = await getResult<LogPage>(account, `${path}${query}`);
-    for (const line of page.lines ?? []) out(logText(line));
+    const lines = page.lines ?? [];
+    // .map rather than for...of: a string here must fail, not print one character per line.
+    lines.map(logText).forEach((text) => out(text));
     cursor = page.truncated ? page.cursor : undefined;
     if (!cursor || seen.has(cursor)) return;
     seen = new Set([...seen, cursor]);
@@ -246,10 +248,14 @@ function logText(line: unknown): string {
 
 /** Reads every page of a paginated list endpoint (bounded by MAX_PAGES). */
 async function listAll<T>(account: Account, path: string): Promise<readonly T[]> {
-  let all: readonly T[] = [];
+  // The worker tag reaches `path` unencoded, so the path may already carry a query.
+  const sep = path.includes("?") ? "&" : "?";
+  const all: T[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const body = await request<T[]>(account, `${path}?page=${page}&per_page=${PER_PAGE}`);
-    all = [...all, ...body.result];
+    const body = await request<T[]>(account, `${path}${sep}page=${page}&per_page=${PER_PAGE}`);
+    // push(...) on this local array rather than [...all, ...]: the CLI's error for a
+    // non-array page is V8's call-spread TypeError, and the tests pin that text.
+    all.push(...body.result);
     if (!hasMorePages(body.result_info, body.result.length, PER_PAGE)) break;
   }
   return all;
