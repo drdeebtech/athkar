@@ -2,8 +2,16 @@
 
 import { PartyPopper, RotateCcw } from "lucide-react";
 import Link from "next/link";
-import { Fragment, useState } from "react";
-import { counterReducer, createCounter, type CounterAction, type CounterState } from "@/lib/athkar/counter";
+import { Fragment, useRef, useState } from "react";
+import {
+  createProgress,
+  reset,
+  resetAll,
+  summarize,
+  tap,
+  type ProgressStep,
+  type ReadingProgress,
+} from "@/lib/athkar/counter";
 import type { Zekr } from "@/lib/athkar/types";
 import { AdSlot, adsEnabled } from "./ad-slot";
 import { ZekrCard } from "./zekr-card";
@@ -19,8 +27,6 @@ const AD_EVERY = 5;
 const SHORT_PAGE = 3;
 const ADVANCE_DELAY_MS = 250;
 
-const initial = (items: readonly Zekr[]) => items.map((z) => createCounter(z.count));
-
 /** Scrolls to the next unfinished zekr and moves keyboard focus to its counter. */
 function advanceTo(id: string) {
   const card = document.getElementById(`zekr-${id}`);
@@ -30,35 +36,31 @@ function advanceTo(id: string) {
   card.querySelector<HTMLButtonElement>("[data-counter]")?.focus({ preventScroll: true });
 }
 
-function announce(index: number, current: CounterState, action: CounterAction): string {
-  const n = index + 1;
-  if (action.type === "reset") return `أُعيد عدّ الذكر ${n}`;
-  if (current.remaining === 0) return "";
-  const left = current.remaining - 1;
-  return left === 0 ? `تمّ الذكر ${n}` : `الذكر ${n}: المتبقي ${left}`;
-}
-
+/** A situation's adhkar with tap counters, overall progress and the all-done message. */
 export function ZekrList({ title, items, next }: ZekrListProps) {
-  const [counters, setCounters] = useState<CounterState[]>(() => initial(items));
+  const [progress, setProgress] = useState<ReadingProgress>(() => createProgress(items));
+  // The progress after the latest step, ahead of `progress` until React re-renders,
+  // so two taps in one task both count.
+  const latest = useRef(progress);
   // Screen readers do not reliably re-read a focused button whose label changed,
   // so each tap is also announced here.
   const [announcement, setAnnouncement] = useState("");
 
-  const dispatch = (index: number, action: CounterAction) => {
-    const current = counters[index];
-    const completes = action.type === "tap" && current.remaining === 1;
-    setCounters((list) => list.map((c, i) => (i === index ? counterReducer(c, action) : c)));
-    setAnnouncement(announce(index, current, action));
+  // Each step's outcome and next state come from the same progress. Effects run here
+  // rather than in a state updater, which React may call more than once.
+  const apply = (event: (current: ReadingProgress) => ProgressStep) => {
+    const { progress: nextProgress, outcome } = event(latest.current);
+    latest.current = nextProgress;
+    setProgress(nextProgress);
+    if (outcome.announcement !== null) setAnnouncement(outcome.announcement);
 
-    if (!completes) return;
+    if (!outcome.completed) return;
     if (typeof navigator.vibrate === "function") navigator.vibrate(30);
-    const nextPending = counters.findIndex((c, i) => i > index && c.remaining > 0);
-    if (nextPending !== -1) setTimeout(() => advanceTo(items[nextPending].id), ADVANCE_DELAY_MS);
+    const { nextPending } = outcome;
+    if (nextPending !== null) setTimeout(() => advanceTo(items[nextPending].id), ADVANCE_DELAY_MS);
   };
 
-  const doneCount = counters.filter((c) => c.remaining === 0).length;
-  const allDone = doneCount === items.length;
-  const percent = Math.round((doneCount / items.length) * 100);
+  const { doneCount, total, percent, allDone, canResetAll } = summarize(progress);
 
   return (
     <div>
@@ -69,12 +71,12 @@ export function ZekrList({ title, items, next }: ZekrListProps) {
         <div className="flex items-center justify-between gap-3 text-sm">
           <span aria-live="polite" className="font-display">
             أتممت <span className="font-bold tabular-nums">{doneCount}</span> من{" "}
-            <span className="tabular-nums">{items.length}</span>
+            <span className="tabular-nums">{total}</span>
           </span>
           <button
             type="button"
-            aria-disabled={doneCount === 0}
-            onClick={() => doneCount > 0 && setCounters(initial(items))}
+            aria-disabled={!canResetAll}
+            onClick={() => canResetAll && apply(resetAll)}
             className="clay-sm clay-press flex items-center gap-1.5 px-3 py-1.5 text-muted-foreground hover:text-foreground aria-disabled:pointer-events-none aria-disabled:opacity-40"
           >
             <RotateCcw className="size-4" aria-hidden="true" />
@@ -103,9 +105,9 @@ export function ZekrList({ title, items, next }: ZekrListProps) {
                 index={i}
                 total={items.length}
                 title={title}
-                counter={counters[i]}
-                onTap={() => dispatch(i, { type: "tap" })}
-                onReset={() => dispatch(i, { type: "reset" })}
+                counter={progress[i]}
+                onTap={() => apply((current) => tap(current, i))}
+                onReset={() => apply((current) => reset(current, i))}
               />
             </li>
             {adsEnabled && (i + 1) % AD_EVERY === 0 && i + 1 < items.length && (

@@ -3,7 +3,7 @@
 import { Check, Copy, RotateCcw, Share2 } from "lucide-react";
 import { useState } from "react";
 import { timesCount } from "@/lib/athkar/arabic";
-import { counterStatus, type CounterState } from "@/lib/athkar/counter";
+import { canReset, isDone, type CounterState } from "@/lib/athkar/counter";
 import type { Zekr } from "@/lib/athkar/types";
 import { cn } from "@/lib/utils";
 import { copyText, formatForSharing, shareText } from "./share";
@@ -21,9 +21,9 @@ interface ZekrCardProps {
   readonly expanded?: boolean;
 }
 
+/** One zekr with its tap counter, reset, copy and share actions. */
 export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, expanded = false }: ZekrCardProps) {
-  const status = counterStatus(counter);
-  const done = status === "done";
+  const done = isDone(counter);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -81,7 +81,9 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
         <button
           type="button"
           data-counter
-          onClick={() => !done && onTap()}
+          // No guard here: this render may be stale when several clicks land in one
+          // task, so the counter module decides (a tap on a finished zekr is ignored).
+          onClick={onTap}
           aria-disabled={done}
           aria-label={done ? "تم هذا الذكر" : `اضغط للعد، المتبقي ${counter.remaining}`}
           style={{ "--hue": done ? 150 : 60 } as React.CSSProperties}
@@ -104,7 +106,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
             </>
           )}
         </button>
-        <IconButton label="إعادة العدّ" onClick={onReset} disabled={status === "idle"}>
+        <IconButton label="إعادة العدّ" onClick={onReset} disabled={!canReset(counter)}>
           <RotateCcw className="size-5" aria-hidden="true" />
         </IconButton>
         <IconButton label={copied ? "تم النسخ" : "نسخ"} onClick={handleCopy}>
@@ -135,7 +137,9 @@ function IconButton({
   return (
     <button
       type="button"
-      onClick={() => !disabled && onClick()}
+      // aria-disabled only: the handler itself ignores the click when there is
+      // nothing to do, because this render may be stale within one task.
+      onClick={onClick}
       aria-disabled={disabled}
       aria-label={label}
       title={label}
