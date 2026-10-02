@@ -25,7 +25,13 @@ updates:
       # together with TypeScript 6.0; remove once TypeScript 7 is supported.
       - dependency-name: typescript
         versions: [">=6.0.0"]
+      # Node.js type definitions must match the oldest Node.js the project runs
+      # on (.nvmrc and "engines": 24); newer majors let typecheck accept APIs
+      # Node 24 lacks. Raise together with .nvmrc when moving to a newer major.
+      - dependency-name: "@types/node"
+        versions: [">=25.0.0"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+
