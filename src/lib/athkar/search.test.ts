@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { GET } from "@/app/search-index.json/route";
 import { getCategories, getCategory } from "./data";
 import type { Category } from "./types";
 import { createSearchIndex, isSearchQuery, parseSearchIndex, searchIndex, toSearchPayload } from "./search";
@@ -75,6 +76,14 @@ describe("toSearchPayload", () => {
     expect(toSearchPayload([category])).toEqual([
       { id: 9, title: "دعاء", sectionId: "misc", items: [{ id: "9-1", text: "نص", count: 3 }] },
     ]);
+  });
+});
+
+describe("GET /search-index.json", () => {
+  // The other payload tests call toSearchPayload directly, so only this one
+  // notices if the route stops publishing it for every situation.
+  it("publishes toSearchPayload of the whole catalogue", async () => {
+    expect(await GET().text()).toBe(JSON.stringify(toSearchPayload(getCategories())));
   });
 });
 
