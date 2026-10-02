@@ -18,13 +18,12 @@ updates:
       # Remove once eslint-config-next supports ESLint 10.
       - dependency-name: eslint
         update-types: ["version-update:semver-major"]
-      # The installed typescript-eslint (8.57, via eslint-config-next) supports
-      # TypeScript below 6.0; the newest (8.71) supports below 6.1, and none
-      # supports 7 ("typescript-eslint does not support TS 7.0").
-      # Raise to ">=6.1.0" when the lockfile moves to typescript-eslint >= 8.71
-      # together with TypeScript 6.0; remove once TypeScript 7 is supported.
+      # typescript-eslint (8.71, via eslint-config-next) supports TypeScript
+      # below 6.1, and no release supports 7 yet. package.json pins "~6.0.3"
+      # to match. Raise this hold (and that range) together with
+      # typescript-eslint's peer range; remove once TypeScript 7 is supported.
       - dependency-name: typescript
-        versions: [">=6.0.0"]
+        versions: [">=6.1.0"]
       # Node.js type definitions must match the oldest Node.js the project runs
       # on (.nvmrc and "engines": 24); newer majors let typecheck accept APIs
       # Node 24 lacks. Raise together with .nvmrc when moving to a newer major.
