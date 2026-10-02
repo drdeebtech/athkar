@@ -17,6 +17,13 @@ const API = "https://api.cloudflare.com/client/v4";
 const KEYCHAIN_SERVICE = "athkar-cloudflare-builds";
 const PER_PAGE = 50;
 const MAX_PAGES = 20;
+const MAX_LOG_PAGES = 200;
+const REQUEST_TIMEOUT_MS = 30_000;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ACCOUNT_ID = /^[0-9a-f]{32}$/;
+const TOKEN = /^[\x21-\x7e]+$/;
+// C0/C1 control characters except tab and newline (blocks terminal escape injection).
+const CONTROL_CHARS = /[\x00-\x08\x0b-\x1f\x7f-\x9f]/g;
 
 interface ResultInfo {
   readonly page?: number;
@@ -120,22 +127,57 @@ export function parseApiBody<T>(text: string): ApiBody<T> | { readonly success: 
   }
 }
 
+/** Removes control characters so remote text cannot drive the terminal. */
+export function sanitizeTerminal(text: string): string {
+  return text.replace(CONTROL_CHARS, "");
+}
+
+export function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  return "unknown error";
+}
+
+/** Rejects tokens that are not printable ASCII; never includes the token in the error. */
+export function validateToken(token: string): string {
+  if (!TOKEN.test(token)) {
+    throw new Error("Token has invalid characters (whitespace or control characters). Re-create it and try again.");
+  }
+  return token;
+}
+
+/** Env var wins when non-empty; otherwise wrangler.jsonc. Must be a 32-char hex id. */
+export function resolveAccountId(fromEnv: string | undefined, fromConfig: string | undefined): string {
+  const id = fromEnv?.trim() || fromConfig;
+  if (!id) throw new Error("Set account_id in wrangler.jsonc or CLOUDFLARE_ACCOUNT_ID.");
+  if (!ACCOUNT_ID.test(id)) throw new Error("Account id must be 32 hex characters.");
+  return id;
+}
+
 export function parseArgs(argv: readonly string[]): { buildId?: string; branch?: string } {
   const i = argv.indexOf("--branch");
-  const branch = i !== -1 ? argv[i + 1] : undefined;
-  const buildId = argv.find((a, idx) => !a.startsWith("--") && argv[idx - 1] !== "--branch");
+  let branch: string | undefined;
+  if (i !== -1) {
+    const value = argv[i + 1];
+    if (!value || value.startsWith("--")) throw new Error("--branch needs a value");
+    branch = value;
+  }
+  const buildId = argv.find((a, idx) => !a.startsWith("--") && !(i !== -1 && idx === i + 1));
+  if (buildId && !UUID.test(buildId)) throw new Error(`"${sanitizeTerminal(buildId)}" is not a build UUID`);
   return { buildId, branch };
 }
 
 function readToken(): string {
   const fromEnv = process.env.CLOUDFLARE_BUILDS_API_TOKEN?.trim();
-  if (fromEnv) return fromEnv;
+  if (fromEnv) return validateToken(fromEnv);
   if (process.platform === "darwin") {
     try {
-      return execFileSync("security", ["find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
-      }).trim();
+      return validateToken(
+        execFileSync("security", ["find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"], {
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"],
+        }).trim(),
+      );
     } catch {
       // fall through to the error below
     }
@@ -146,7 +188,17 @@ function readToken(): string {
 }
 
 async function request<T>(token: string, path: string): Promise<ApiBody<T>> {
-  const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch (err) {
+    // Never surface fetch's own message: it can quote request headers (the token).
+    const timedOut = err instanceof Error && err.name === "TimeoutError";
+    throw new Error(`${path}: ${timedOut ? `timed out after ${REQUEST_TIMEOUT_MS / 1000}s` : "network error"}`);
+  }
   const body = parseApiBody<T>(await res.text());
   if (!res.ok || !body.success) {
     const errors = "errors" in body ? body.errors : undefined;
@@ -177,10 +229,10 @@ async function main() {
     name: string;
     account_id?: string;
   };
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? config.account_id;
-  if (!accountId) throw new Error("Set account_id in wrangler.jsonc or CLOUDFLARE_ACCOUNT_ID.");
-  const token = readToken();
+  // Validate input before touching credentials, so bad arguments get a clear error.
   const { buildId, branch } = parseArgs(process.argv.slice(2));
+  const accountId = resolveAccountId(process.env.CLOUDFLARE_ACCOUNT_ID, config.account_id);
+  const token = readToken();
 
   let uuid = buildId;
   if (!uuid) {
@@ -192,26 +244,34 @@ async function main() {
     if (!latest) throw new Error(branch ? `No builds for branch "${branch}".` : "No builds yet.");
     uuid = latest.build_uuid;
     const meta = latest.build_trigger_metadata;
-    console.log(`Build ${uuid}  ${latest.status ?? ""} ${latest.build_outcome ?? ""}`.trim());
-    console.log(`Branch ${branchOf(latest) ?? "?"}  commit ${meta?.commit_hash?.slice(0, 7) ?? "?"}  ${meta?.commit_message ?? ""}`);
+    console.log(sanitizeTerminal(`Build ${uuid}  ${latest.status ?? ""} ${latest.build_outcome ?? ""}`.trim()));
+    console.log(
+      sanitizeTerminal(
+        `Branch ${branchOf(latest) ?? "?"}  commit ${meta?.commit_hash?.slice(0, 7) ?? "?"}  ${meta?.commit_message ?? ""}`,
+      ),
+    );
     console.log("-".repeat(60));
   }
 
   let cursor: string | undefined;
-  do {
+  const seen = new Set<string>();
+  for (let n = 0; n < MAX_LOG_PAGES; n++) {
     const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
     const page = await api<{ lines?: unknown[]; cursor?: string; truncated?: boolean }>(
       token,
-      `/accounts/${accountId}/builds/builds/${uuid}/logs${query}`,
+      `/accounts/${accountId}/builds/builds/${encodeURIComponent(uuid)}/logs${query}`,
     );
-    formatLogLines(page.lines ?? []).forEach((l) => console.log(l));
+    formatLogLines(page.lines ?? []).forEach((l) => console.log(sanitizeTerminal(l)));
     cursor = page.truncated ? page.cursor : undefined;
-  } while (cursor);
+    if (!cursor || seen.has(cursor)) return;
+    seen.add(cursor);
+  }
+  console.error(`cf-build-logs: stopped after ${MAX_LOG_PAGES} log pages`);
 }
 
 if (isEntrypoint(import.meta.url, process.argv[1])) {
   main().catch((err: unknown) => {
-    console.error(`cf-build-logs: ${(err as Error).message}`);
+    console.error(`cf-build-logs: ${sanitizeTerminal(errorMessage(err))}`);
     process.exit(1);
   });
 }
