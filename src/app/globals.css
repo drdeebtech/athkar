@@ -62,6 +62,8 @@
   --hadith: oklch(0.49 0.11 50);
   --done: oklch(0.6 0.12 150);
   --radius: 0.875rem;
+  /* Default step until settings apply (and without JS). Reading settings set
+     the size inline on <html> from FONT_STEPS in src/lib/athkar/settings.ts. */
   --zekr-size: 1.75rem;
 
   /* clay lighting */
@@ -110,12 +112,6 @@
   --glaze-ink-l: 0.9;
   --glaze-ink-c: 0.055;
 }
-
-html[data-font="0"] { --zekr-size: 1.25rem; }
-html[data-font="1"] { --zekr-size: 1.5rem; }
-html[data-font="2"] { --zekr-size: 1.75rem; }
-html[data-font="3"] { --zekr-size: 2.05rem; }
-html[data-font="4"] { --zekr-size: 2.4rem; }
 
 /* ── Claymorphism ──────────────────────────────────────────────────────── */
 /* Puffy surface lit from above: soft drop, top highlight, bottom shade.

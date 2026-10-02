@@ -5,7 +5,10 @@ import { createContext, useCallback, useContext, useEffect, useId, useRef, useSt
 import {
   DEFAULT_SETTINGS,
   FONT_STEPS,
+  PREFERS_DARK_QUERY,
+  ROOT_SETTINGS_CONSTANTS,
   SETTINGS_KEY,
+  applySettingsToRoot,
   parseSettings,
   updateSettings,
   type ReadingSettings,
@@ -23,13 +26,11 @@ const SettingsContext = createContext<SettingsContextValue>({ settings: DEFAULT_
 
 export const useReadingSettings = () => useContext(SettingsContext);
 
+// The same function, constants and matchMedia check as the pre-paint script, so first load and later
+// changes agree, and a browser without matchMedia still gets the chosen settings.
 function applyToDocument(s: ReadingSettings) {
-  const root = document.documentElement;
-  root.dataset.font = String(s.fontStep);
-  if (s.bold) root.dataset.bold = "on";
-  else delete root.dataset.bold;
-  const dark = s.theme === "dark" || (s.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-  root.classList.toggle("dark", dark);
+  const prefersDark = typeof matchMedia === "function" && matchMedia(PREFERS_DARK_QUERY).matches;
+  applySettingsToRoot(document.documentElement, s, prefersDark, ROOT_SETTINGS_CONSTANTS);
 }
 
 function readStored(): ReadingSettings {
@@ -77,8 +78,10 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
   const settings = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
-    if (settings.theme !== "system") return;
-    const mq = matchMedia("(prefers-color-scheme: dark)");
+    // Without matchMedia there is no system preference to follow; applyToDocument
+    // already resolves "system" to light in that case.
+    if (settings.theme !== "system" || typeof matchMedia !== "function") return;
+    const mq = matchMedia(PREFERS_DARK_QUERY);
     const onChange = () => applyToDocument(settings);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
