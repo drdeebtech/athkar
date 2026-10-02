@@ -1,12 +1,19 @@
 """Builds the self-hosted woff2 fonts in src/fonts from pinned google/fonts sources.
 
 Usage: python scripts/fonts/build-fonts.py <dir-with-ttf-sources>
-Requires: fonttools[woff] (fonttools + brotli).
+Requires: Python 3.11+ and the exact versions in scripts/fonts/requirements.txt
+  (pip install -r scripts/fonts/requirements.txt): fonttools, brotli, uharfbuzz.
+  With those versions a rebuild gives the committed bytes. uharfbuzz is not
+  optional: without it fontTools serializes GSUB/GPOS differently, so the build
+  stops if it cannot be imported.
 
 Sources: https://github.com/google/fonts at commit 9710da1eacb3be272583c3224dcb70f9da6eadbb
   ofl/baloobhaijaan2/BalooBhaijaan2[wght].ttf
   ofl/scheherazadenew/ScheherazadeNew-{Regular,Bold}.ttf
   ofl/ibmplexsansarabic/IBMPlexSansArabic-{Regular,Medium,Bold}.ttf
+The build checks each source against INPUT_SHA256 before it writes anything, so
+a different upstream revision (with, say, another copyright year or Reserved
+Font Name line than the vendored OFL texts) cannot slip in.
 Each font is subset to its family's ranges in src/fonts/unicode-ranges.json (the
 shared "core" plus the family's "extra" ranges, if any), keeping every OpenType
 layout feature so Arabic shaping, marks and ligatures are unchanged. The build
@@ -41,6 +48,15 @@ FONTS = {
     "IBMPlexSansArabic-Regular.ttf": "AthkarSansArabic-Regular.woff2",
     "IBMPlexSansArabic-Medium.ttf": "AthkarSansArabic-Medium.woff2",
     "IBMPlexSansArabic-Bold.ttf": "AthkarSansArabic-Bold.woff2",
+}
+# SHA-256 of each source at the pinned google/fonts commit.
+INPUT_SHA256 = {
+    "BalooBhaijaan2[wght].ttf": "3e9f07fbc796c0ddcb3e6e0aa26f9c86741d9f5b7f5cb72f4ed3c06e55a19336",
+    "ScheherazadeNew-Regular.ttf": "794bac8dc9e83d1d620bc471ea694f5f31d0965ce8006490a79dfc51a2d283b3",
+    "ScheherazadeNew-Bold.ttf": "91363517a63dbc7448b5814226d33d845b26b32a461cd159ea0b3f23c7effd2d",
+    "IBMPlexSansArabic-Regular.ttf": "6f611412270a132bbac838da9259d4c68569b4175f3b3b8fa3fa36a30b56dab9",
+    "IBMPlexSansArabic-Medium.ttf": "b8363ab9f733dfa4f8e96b8b2102c24b5cf4110fb96d1d3d9a9412f6fb49cf74",
+    "IBMPlexSansArabic-Bold.ttf": "691e0c891a38637ae6bbdb69700f8042cb0724a137bee615068ffdb92244f61f",
 }
 
 # OFL Reserved Font Names (by source file prefix) that must not appear in Modified Versions' names.
@@ -110,8 +126,38 @@ def rename_reserved(font: TTFont, reserved: list[str]) -> None:
             raise SystemExit(f"reserved name {reserved!r} left in name ID {record.nameID}: {text!r}")
 
 
+def require_repacker() -> None:
+    """Stop unless fontTools can use HarfBuzz's repacker, which the committed bytes depend on."""
+    try:
+        import uharfbuzz  # noqa: F401
+    except ImportError:
+        raise SystemExit(
+            "uharfbuzz is not installed, so fontTools would lay out GSUB/GPOS differently and every "
+            "woff2 would change. Install the pinned versions: "
+            "pip install -r scripts/fonts/requirements.txt"
+        ) from None
+
+
+def check_inputs(src: Path) -> None:
+    """Stop before writing anything unless every source matches the pinned upstream file."""
+    for ttf, expected in INPUT_SHA256.items():
+        path = src / ttf
+        if not path.is_file():
+            raise SystemExit(f"missing source {path}")
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != expected:
+            raise SystemExit(
+                f"{ttf} differs from google/fonts 9710da1 (sha256 {actual}, expected {expected}); "
+                "rebuild from the pinned sources or update INPUT_SHA256 and the license files together"
+            )
+
+
 def main() -> None:
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: python scripts/fonts/build-fonts.py <dir-with-ttf-sources>")
+    require_repacker()
     src = Path(sys.argv[1])
+    check_inputs(src)
     options = subset.Options()
     options.flavor = "woff2"
     options.layout_features = ["*"]
