@@ -77,7 +77,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
         )}
       </div>
 
-      <footer className="flex items-center gap-3 px-4 pb-5 sm:px-6">
+      <footer className="flex flex-wrap items-center gap-3 px-4 pb-5 sm:px-6">
         <button
           type="button"
           data-counter
@@ -88,7 +88,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
           aria-label={done ? "تم هذا الذكر" : `اضغط للعد، المتبقي ${counter.remaining}`}
           style={{ "--hue": done ? 150 : 60 } as React.CSSProperties}
           className={cn(
-            "clay glaze flex h-16 flex-1 items-center justify-center gap-3 [--clay-r:9999px] select-none focus-visible:ring-3 focus-visible:ring-ring",
+            "clay glaze flex h-16 min-w-28 flex-1 items-center justify-center gap-3 [--clay-r:9999px] select-none focus-visible:ring-3 focus-visible:ring-ring",
             // Alternate the animation name so the squish replays on every tap without
             // remounting the button (a remount would drop keyboard and screen-reader focus).
             done ? "cursor-default" : cn("clay-press", counter.remaining % 2 ? "squish" : "squish-alt"),
@@ -102,7 +102,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
           ) : (
             <>
               <span className="font-display text-3xl leading-none font-extrabold tabular-nums">{counter.remaining}</span>
-              <span className="font-display text-base font-bold opacity-80">اضغط للعدّ</span>
+              <span className="font-display text-base font-bold">اضغط للعدّ</span>
             </>
           )}
         </button>

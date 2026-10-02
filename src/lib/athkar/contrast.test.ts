@@ -47,8 +47,14 @@ const TEXT_PAIRS: [string, string][] = [
   ["destructive", "card"],
   ["muted-foreground", "card"],
   ["muted-foreground", "muted"],
+  ["muted-foreground", "secondary"],
   ["quran", "card"],
   ["hadith", "card"],
+];
+/** Secondary text (labels, sources, counts) on the surfaces it sits on: AAA, for phones in daylight. */
+const AAA_TEXT_PAIRS: [string, string][] = [
+  ["muted-foreground", "card"],
+  ["muted-foreground", "background"],
 ];
 const RING_SURFACES = ["background", "card", "muted", "secondary"];
 
@@ -57,6 +63,10 @@ describe.each([":root", ".dark"])("%s colour contrast (WCAG 2.2 AA)", (selector)
 
   it.each(TEXT_PAIRS)("%s text on %s is at least 4.5:1", (fg, bg) => {
     expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(AAA_TEXT_PAIRS)("%s text on %s is at least 7:1", (fg, bg) => {
+    expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(7);
   });
 
   it.each(RING_SURFACES)("focus ring on %s is at least 3:1", (bg) => {
