@@ -3,6 +3,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import tailwind from "@tailwindcss/postcss";
 import postcss, { type Rule } from "postcss";
 import { describe, expect, it } from "vitest";
+import { FONT_STEPS } from "./settings";
 
 const SRC = join(__dirname, "../..");
 
@@ -17,6 +18,18 @@ function components(dir = SRC): string[] {
 
 const FILES = components();
 const read = (file: string) => readFileSync(join(SRC, file), "utf8");
+
+/** Every non-test .ts/.tsx source under src/, relative to src/. */
+function sources(dir = SRC): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sources(path);
+    return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [relative(SRC, path)] : [];
+  });
+}
+
+/** Source without // and /* *\/ comments, so a comment that names a file or class does not count. */
+const code = (file: string) => read(file).replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 
 /** The files that import `file`, from an "@/…" or a relative specifier. */
 function importersOf(file: string): string[] {
@@ -37,23 +50,35 @@ function routesRendering(file: string, seen = new Set<string>()): string[] {
   return importersOf(file).flatMap((f) => routesRendering(f, seen));
 }
 
-/** Font-size utilities below 14px: text-xs, or an arbitrary text-[…] size under 0.875rem. */
+/**
+ * Font sizes below 14px: text-xs (also through @apply), an arbitrary text-[…] size,
+ * a CSS font-size or a React fontSize under 0.875rem.
+ */
 function smallText(code: string): string[] {
   const found = [...code.matchAll(/\btext-xs\b/g)].map((m) => m[0]);
-  for (const [token, value, unit] of code.matchAll(/\btext-\[(\d*\.?\d+)(rem|px)\]/g)) {
-    if (Number(value) * (unit === "rem" ? 16 : 1) < 14) found.push(token);
+  const sizes = /\btext-\[(\d*\.?\d+)(rem|px)\]|font-size:\s*(\d*\.?\d+)(rem|px)|fontSize:\s*["'](\d*\.?\d+)(rem|px)["']/g;
+  for (const m of code.matchAll(sizes)) {
+    const [value, unit] = [m[1] ?? m[3] ?? m[5], m[2] ?? m[4] ?? m[6]];
+    if (Number(value) * (unit === "rem" ? 16 : 1) < 14) found.push(m[0]);
   }
   return found;
 }
 
 describe("phone typography", () => {
-  it("sets no text below 14px", () => {
-    const offending = FILES.flatMap((f) => smallText(read(f)).map((token) => `${f}: ${token}`));
+  it("sets no text below 14px in any source or in globals.css", () => {
+    const offending = [...sources(), "app/globals.css"].flatMap((f) => smallText(read(f)).map((token) => `${f}: ${token}`));
     expect(offending).toEqual([]);
   });
 
-  it("declares the reading face in the situation layout only, so other pages never load it", () => {
-    expect(read("app/layout.tsx")).not.toMatch(/AthkarNaskh|--font-naskh/);
+  it("offers no reading size below 14px", () => {
+    for (const size of FONT_STEPS) expect(Number.parseFloat(size) * 16, size).toBeGreaterThanOrEqual(14);
+  });
+
+  it("loads the reading face only in the situation layout, so other pages' HTML and CSS never reference it", () => {
+    // Pages that prefetch a situation link (home quick links, section grid, search
+    // results) still fetch the files after load, from that route's font hints.
+    const loaders = sources().filter((f) => /AthkarNaskh-\w+\.woff2|["']--font-naskh["']/.test(code(f)));
+    expect(loaders).toEqual(["app/athkar/[id]/layout.tsx"]);
     expect(read("app/athkar/[id]/layout.tsx")).toContain('variable: "--font-naskh"');
   });
 
@@ -82,7 +107,7 @@ describe("phone typography", () => {
   }, 30_000);
 
   it("uses the reading face only on situation pages; titles elsewhere are in the UI face", () => {
-    const users = FILES.filter((f) => /\bfont-zekr\b|["'\s]zekr-text\b/.test(read(f)));
+    const users = FILES.filter((f) => /\bfont-zekr\b|["'`\s]zekr-text\b/.test(read(f)));
     expect(users).toContain("app/athkar/[id]/page.tsx");
     expect(users).toContain("components/athkar/zekr-text.tsx");
     for (const file of users) {
