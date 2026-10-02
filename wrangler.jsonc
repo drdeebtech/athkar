@@ -16,6 +16,10 @@
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
   },
+  // Serve only on athkar.site: no *.workers.dev origin and no version-URL
+  // previews (both already off; set explicitly so a routes edit can't flip them).
+  "workers_dev": false,
+  "preview_urls": false,
   "routes": [
     { "pattern": "athkar.site", "custom_domain": true },
     { "pattern": "www.athkar.site", "custom_domain": true }

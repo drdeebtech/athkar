@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { formatLogLines, parseArgs, pickLatest, stripJsonComments } from "./cf-build-logs";
+import {
+  errorMessage,
+  formatLogLines,
+  parseArgs,
+  pickLatest,
+  resolveAccountId,
+  sanitizeTerminal,
+  stripJsonComments,
+  validateToken,
+} from "./cf-build-logs";
 
 describe("stripJsonComments", () => {
   it("removes line and block comments but keeps // inside strings", () => {
@@ -39,7 +48,8 @@ describe("formatLogLines", () => {
 describe("parseArgs", () => {
   it("reads an optional build id and --branch", () => {
     expect(parseArgs([])).toEqual({ buildId: undefined, branch: undefined });
-    expect(parseArgs(["abc"])).toEqual({ buildId: "abc", branch: undefined });
+    const uuid = "3aed095a-6ff4-4745-b99d-fa2872ddf446";
+    expect(parseArgs([uuid])).toEqual({ buildId: uuid, branch: undefined });
     expect(parseArgs(["--branch", "main"])).toEqual({ buildId: undefined, branch: "main" });
   });
 });
@@ -73,7 +83,7 @@ describe("isEntrypoint", () => {
 describe("isEntrypoint with symlinks", () => {
   it("matches when argv[1] is a symlink to the module", async () => {
     const { isEntrypoint } = await import("./cf-build-logs");
-    const { mkdtempSync, writeFileSync, symlinkSync } = await import("node:fs");
+    const { mkdtempSync, writeFileSync, symlinkSync, rmSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
     const { pathToFileURL } = await import("node:url");
@@ -82,7 +92,11 @@ describe("isEntrypoint with symlinks", () => {
     const link = join(dir, "link.ts");
     writeFileSync(real, "");
     symlinkSync(real, link);
-    expect(isEntrypoint(pathToFileURL(real).href, link)).toBe(true);
+    try {
+      expect(isEntrypoint(pathToFileURL(real).href, link)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -96,5 +110,71 @@ describe("parseApiBody", () => {
     const { parseApiBody } = await import("./cf-build-logs");
     expect(parseApiBody("<html>502 Bad Gateway</html>")).toEqual({ success: false });
     expect(parseApiBody("")).toEqual({ success: false });
+  });
+});
+
+describe("parseArgs validation", () => {
+  const uuid = "3aed095a-6ff4-4745-b99d-fa2872ddf446";
+
+  it("accepts a UUID build id and a branch", () => {
+    expect(parseArgs([uuid])).toEqual({ buildId: uuid, branch: undefined });
+    expect(parseArgs(["--branch", "main"])).toEqual({ buildId: undefined, branch: "main" });
+  });
+
+  it("rejects --branch without a value", () => {
+    expect(() => parseArgs(["--branch"])).toThrow(/--branch needs a value/);
+    expect(() => parseArgs(["--branch", "--other"])).toThrow(/--branch needs a value/);
+  });
+
+  it("rejects build ids that are not UUIDs (no path segments reach the URL)", () => {
+    expect(() => parseArgs(["../../user/tokens/verify"])).toThrow(/not a build UUID/);
+  });
+});
+
+describe("validateToken", () => {
+  it("accepts printable ASCII tokens", () => {
+    expect(validateToken("abc_DEF-123")).toBe("abc_DEF-123");
+  });
+
+  it("rejects tokens with whitespace or control characters without echoing them", () => {
+    const malformed = ["MARKER", "abc", "\n", "DEF"].join("");
+    let message = "";
+    try {
+      validateToken(malformed);
+    } catch (err) {
+      message = (err as Error).message;
+    }
+    expect(message).toMatch(/invalid characters/);
+    expect(message).not.toContain("MARKER");
+  });
+});
+
+describe("resolveAccountId", () => {
+  const id = "fc8c8db485888cc39d246ac7d81f9f5f";
+
+  it("prefers a non-empty env var and falls back to config when it is empty", () => {
+    expect(resolveAccountId("0123456789abcdef0123456789abcdef", id)).toBe("0123456789abcdef0123456789abcdef");
+    expect(resolveAccountId("", id)).toBe(id);
+    expect(resolveAccountId(undefined, id)).toBe(id);
+  });
+
+  it("rejects missing or malformed account ids", () => {
+    expect(() => resolveAccountId(undefined, undefined)).toThrow(/account_id/);
+    expect(() => resolveAccountId("../x", undefined)).toThrow(/32 hex/);
+  });
+});
+
+describe("sanitizeTerminal", () => {
+  it("strips ANSI escapes and control characters but keeps tabs and text", () => {
+    expect(sanitizeTerminal("ok\u001b[2Jcleared\u0007\tdone")).toBe("ok[2Jcleared\tdone");
+    expect(sanitizeTerminal("أذكار")).toBe("أذكار");
+  });
+});
+
+describe("errorMessage", () => {
+  it("handles Error instances and non-Error throws", () => {
+    expect(errorMessage(new Error("boom"))).toBe("boom");
+    expect(errorMessage("plain")).toBe("plain");
+    expect(errorMessage(undefined)).toBe("unknown error");
   });
 });
