@@ -57,3 +57,6 @@ temp/
 # static export and wrangler
 /out/
 .wrangler/
+
+# Claude Code agent worktrees (full repo copies)
+.claude/worktrees/
