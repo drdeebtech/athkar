@@ -17,9 +17,11 @@ interface ZekrCardProps {
   readonly counter: CounterState;
   readonly onTap: () => void;
   readonly onReset: () => void;
+  /** Show the virtue and source open by default (short pages). */
+  readonly expanded?: boolean;
 }
 
-export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset }: ZekrCardProps) {
+export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, expanded = false }: ZekrCardProps) {
   const status = counterStatus(counter);
   const done = status === "done";
   const [copied, setCopied] = useState(false);
@@ -52,7 +54,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset }:
         <ZekrText text={zekr.text} />
 
         {(zekr.virtue || zekr.reference) && (
-          <details className="group clay-inset mt-4 text-sm [--clay-r:1.25rem]">
+          <details open={expanded} className="group clay-inset mt-4 text-sm [--clay-r:1.25rem]">
             <summary className="cursor-pointer list-none px-4 py-3 font-medium text-muted-foreground marker:hidden hover:text-foreground">
               <span className="group-open:hidden">عرض الفضل والمصدر</span>
               <span className="hidden group-open:inline">إخفاء الفضل والمصدر</span>

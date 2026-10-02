@@ -19,3 +19,7 @@
 
 /search-index.json
   Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+# Brand images are not content-hashed; cache a week (rename files when they change).
+/brand/*
+  Cache-Control: public, max-age=604800
