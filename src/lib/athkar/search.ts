@@ -45,7 +45,3 @@ export function searchIndex(index: SearchIndex, query: string): SearchResult[] {
         a.category.id - b.category.id,
     );
 }
-
-export function searchCategories(categories: readonly Category[], query: string): SearchResult[] {
-  return searchIndex(createSearchIndex(categories), query);
-}
