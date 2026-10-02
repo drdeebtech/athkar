@@ -73,7 +73,7 @@ export default async function CategoryPage({ params }: Props) {
           <SectionIcon name={section.icon} className="size-6" />
         </span>
         <div>
-          <h1 className="font-zekr text-3xl leading-[1.6] font-bold sm:text-4xl">{category.title}</h1>
+          <h1 className="font-zekr text-3xl leading-[1.6] font-bold text-balance sm:text-4xl">{category.title}</h1>
           <p className="mt-1 text-sm font-medium">{athkarCount(category.items.length)}</p>
         </div>
       </header>
@@ -90,7 +90,7 @@ export default async function CategoryPage({ params }: Props) {
             <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span>
               <span className="block text-sm text-muted-foreground">السابق</span>
-              <span className="font-sans leading-[1.45] font-bold">{prev.title}</span>
+              <span className="block font-sans leading-[1.45] font-bold">{prev.title}</span>
             </span>
           </Link>
         ) : (
@@ -104,7 +104,7 @@ export default async function CategoryPage({ params }: Props) {
           >
             <span>
               <span className="block text-sm text-muted-foreground">التالي</span>
-              <span className="font-sans leading-[1.45] font-bold">{next.title}</span>
+              <span className="block font-sans leading-[1.45] font-bold">{next.title}</span>
             </span>
             <ChevronLeft className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           </Link>
