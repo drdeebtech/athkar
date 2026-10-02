@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { brotliDecompressSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import source from "../../../data/sources/azkar-db.json";
 import { displayTitle, type SourceRow } from "./normalize";
@@ -35,6 +36,59 @@ function codepoints(ranges: readonly string[]): Set<number> {
   for (const r of ranges) {
     const [lo, hi] = r.replace("U+", "").split("-");
     for (let cp = Number.parseInt(lo, 16); cp <= Number.parseInt(hi ?? lo, 16); cp++) points.add(cp);
+  }
+  return points;
+}
+
+/**
+ * The code points a shipped WOFF2 file maps, read from its own Windows Unicode
+ * (3/1, format 4) cmap, so cmap.json's lists cannot drift from the binaries. WOFF2
+ * stores every table in one brotli stream in directory order; cmap is never
+ * transformed, so its bytes sit at the sum of the preceding tables' lengths.
+ */
+function woff2Codepoints(file: string): Set<number> {
+  const buf = readFileSync(join(FONTS_DIR, file));
+  let pos = 48; // end of the WOFF2 header
+  const base128 = () => {
+    let value = 0;
+    for (let i = 0; i < 5; i++) {
+      const byte = buf[pos++];
+      value = value * 128 + (byte & 0x7f);
+      if (!(byte & 0x80)) return value;
+    }
+    throw new Error(`${file}: bad UIntBase128`);
+  };
+  let offset = 0;
+  let cmap: { offset: number; length: number } | undefined;
+  for (let i = 0; i < buf.readUInt16BE(12); i++) {
+    const flags = buf[pos++];
+    const tag = (flags & 0x3f) === 0x3f ? buf.toString("latin1", pos, (pos += 4)) : flags & 0x3f;
+    const version = flags >> 6;
+    const origLength = base128();
+    // glyf (10) and loca (11) are transformed at version 0, every other table at any other version.
+    const transformed = tag === 10 || tag === 11 ? version === 0 : version !== 0;
+    const length = transformed ? base128() : origLength;
+    if (tag === 0) cmap = { offset, length }; // known-table index 0 is "cmap"
+    offset += length;
+  }
+  if (!cmap) throw new Error(`${file}: no cmap`);
+  const tables = brotliDecompressSync(buf.subarray(pos, pos + buf.readUInt32BE(20)));
+  const t = tables.subarray(cmap.offset, cmap.offset + cmap.length);
+  const records = Array.from({ length: t.readUInt16BE(2) }, (_, i) => 4 + i * 8);
+  const record = records.find((r) => t.readUInt16BE(r) === 3 && t.readUInt16BE(r + 2) === 1);
+  const sub = record === undefined ? -1 : t.readUInt32BE(record + 4);
+  if (sub < 0 || t.readUInt16BE(sub) !== 4) throw new Error(`${file}: no 3/1 format 4 cmap`);
+  const segments = t.readUInt16BE(sub + 6) / 2;
+  const [ends, starts] = [sub + 14, sub + 16 + segments * 2];
+  const [deltas, rangeOffsets] = [starts + segments * 2, starts + segments * 4];
+  const points = new Set<number>();
+  for (let i = 0; i < segments; i++) {
+    const [start, end] = [t.readUInt16BE(starts + i * 2), t.readUInt16BE(ends + i * 2)];
+    const [delta, rangeOffset] = [t.readInt16BE(deltas + i * 2), t.readUInt16BE(rangeOffsets + i * 2)];
+    for (let cp = start; cp <= end && cp !== 0xffff; cp++) {
+      const index = rangeOffset === 0 ? cp : t.readUInt16BE(rangeOffsets + i * 2 + rangeOffset + (cp - start) * 2);
+      if (index !== 0 && (index + delta) & 0xffff) points.add(cp);
+    }
   }
   return points;
 }
@@ -84,6 +138,14 @@ describe("self-hosted font coverage", () => {
       const digest = createHash("sha256").update(readFileSync(join(FONTS_DIR, file))).digest("hex");
       expect(digest, `${file} differs from cmap.json; rerun scripts/fonts/build-fonts.py`).toBe(SHIPPED[file].sha256);
     }
+  });
+
+  it("checks the coverage of every shipped font file", () => {
+    expect([...READING_FACE, ...UI_FACES].sort()).toEqual(Object.keys(SHIPPED).sort());
+  });
+
+  it.each(Object.keys(SHIPPED))("records exactly the code points %s maps", (file) => {
+    expect([...woff2Codepoints(file)].sort((a, b) => a - b)).toEqual([...codepoints(SHIPPED[file].cmap)]);
   });
 
   it("injects ﴿ ﴾ around Quran with CSS, so they count as reading-face text", () => {
