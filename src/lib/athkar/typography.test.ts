@@ -1,5 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import tailwind from "@tailwindcss/postcss";
+import postcss, { type Rule } from "postcss";
 import { describe, expect, it } from "vitest";
 
 const SRC = join(__dirname, "../..");
@@ -55,15 +57,29 @@ describe("phone typography", () => {
     expect(read("app/athkar/[id]/layout.tsx")).toContain('variable: "--font-naskh"');
   });
 
-  it("sets .zekr-text in the reading face without the :root-level --font-zekr variable", () => {
-    // --font-naskh is defined on the situation layout's wrapper, not on <html>, so
-    // var(--font-zekr), which Tailwind declares on :root, would resolve to nothing
-    // and the adhkar would silently fall back to the UI face.
-    const css = readFileSync(join(SRC, "app/globals.css"), "utf8");
-    const rule = /\.zekr-text\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
-    expect(rule).toMatch(/@apply font-zekr;|font-family:\s*var\(--font-naskh\)/);
-    expect(rule).not.toContain("var(--font-zekr)");
-  });
+  it("compiles .zekr-text and .font-zekr to the reading face, never to the :root-level --font-zekr", async () => {
+    // --font-naskh is defined on the situation layout's wrapper, not on <html>. Only
+    // "@theme inline" makes Tailwind write var(--font-naskh) into these rules; with a
+    // plain "@theme" they read var(--font-zekr), declared on :root where --font-naskh
+    // is undefined, and the adhkar and the title silently fall back to the UI face.
+    const from = join(SRC, "app/globals.css");
+    const { root } = await postcss([tailwind({ base: join(SRC, "..") })]).process(readFileSync(from, "utf8"), { from });
+    const families: Record<string, string[]> = { "zekr-text": [], "font-zekr": [] };
+    const themeVarUsers: string[] = [];
+    root.walkDecls((decl) => {
+      const rule = decl.parent?.type === "rule" ? (decl.parent as Rule).selector : String(decl.parent?.type);
+      if (decl.value.includes("var(--font-zekr)")) themeVarUsers.push(`${rule} { ${decl} }`);
+      if (decl.prop !== "font-family") return;
+      for (const cls of Object.keys(families)) {
+        if (new RegExp(`\\.${cls}(?![\\w-])`).test(rule)) families[cls].push(decl.value);
+      }
+    });
+    for (const [cls, values] of Object.entries(families)) {
+      expect(values, `.${cls} sets no font-family`).not.toEqual([]);
+      for (const value of values) expect(value, `.${cls}`).toMatch(/^var\(--font-naskh\)/);
+    }
+    expect(themeVarUsers).toEqual([]);
+  }, 30_000);
 
   it("uses the reading face only on situation pages; titles elsewhere are in the UI face", () => {
     const users = FILES.filter((f) => /\bfont-zekr\b|["'\s]zekr-text\b/.test(read(f)));
