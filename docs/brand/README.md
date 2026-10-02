@@ -36,7 +36,10 @@ pinned google/fonts sources listed in `THIRD_PARTY_NOTICES.md`.
 
 - `src/app/icon.png`, `src/app/apple-icon.png`, `public/brand/icon-*.png` — app and browser icons
 - `public/brand/logo-mark.webp` — header logo
-- `public/brand/hero-rehal-{560,960}.webp`, `public/brand/hero-beads-{480,800}.webp`
+- `public/brand/hero-rehal-{560,720,800,880,960}.{avif,webp}`, `public/brand/hero-beads-{480,640,800}.{avif,webp}`
+  (responsive widths, AVIF first with a WebP fallback; `ART` in
+  `src/components/athkar/brand-art.tsx` lists them and `SLOT_SIZES` says which slot
+  each page needs)
 - `src/app/opengraph-image.jpg` — 1200×630 share image
 
 Rebuild from the 2K originals: `node scripts/brand/build-brand-assets.mjs <source-dir> .`

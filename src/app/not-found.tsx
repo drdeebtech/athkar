@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { BrandArt } from "@/components/athkar/brand-art";
+import { BrandArt, SLOT_SIZES } from "@/components/athkar/brand-art";
 
 export default function NotFound() {
   return (
     <div className="mx-auto max-w-xl px-4 py-14 text-center">
       <div className="clay px-6 pt-4 pb-10 [--clay-r:2.25rem]">
-        <BrandArt name="beads" className="mx-auto w-[min(80%,20rem)]" sizes="320px" />
+        <BrandArt name="beads" className="mx-auto w-[min(80%,20rem)]" sizes={SLOT_SIZES.notFoundBeads} />
         <p className="font-display text-6xl font-extrabold text-primary">٤٠٤</p>
         <h1 className="mt-3 text-2xl font-extrabold">الصفحة غير موجودة</h1>
         <p className="mt-2 text-muted-foreground">ربما تغيّر الرابط. ابحث عن الذكر من الصفحة الرئيسية.</p>

@@ -1,5 +1,5 @@
 import type { Metadata, ResolvingMetadata } from "next";
-import { BrandArt } from "@/components/athkar/brand-art";
+import { BrandArt, SLOT_SIZES } from "@/components/athkar/brand-art";
 
 const description = "مصادر الأذكار المعروضة في الموقع وطريقة تنظيمها.";
 
@@ -19,7 +19,7 @@ export default function SourcesPage() {
     <article className="mx-auto max-w-3xl px-4 py-10 leading-loose">
       <div className="mb-6 flex items-center justify-between gap-4">
         <h1 className="text-4xl font-extrabold">المصادر</h1>
-        <BrandArt name="beads" className="w-40 sm:w-52" sizes="208px" />
+        <BrandArt name="beads" className="w-40 sm:w-52" sizes={SLOT_SIZES.sourcesBeads} />
       </div>
       <div className="clay space-y-6 p-7 [--clay-r:2rem]">
         <section>
