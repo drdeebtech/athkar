@@ -19,6 +19,10 @@ describe("searchIndex", () => {
     expect(searchIndex(index, "x")).toEqual([]);
   });
 
+  it("searches from two letters, the shortest query", () => {
+    expect(searchIndex(index, "هم").map((r) => r.category.id)).toEqual([3]);
+  });
+
   it("matches titles regardless of hamza forms", () => {
     expect(searchIndex(index, "اذكار").map((r) => r.category.id)).toEqual([1, 3]);
   });
@@ -44,6 +48,10 @@ describe("isSearchQuery", () => {
     expect(isSearchQuery("  ")).toBe(false);
     expect(isSearchQuery("ﷲ")).toBe(true);
     expect(isSearchQuery("سفر")).toBe(true);
+  });
+
+  it("accepts two letters, the shortest query", () => {
+    expect(isSearchQuery("هم")).toBe(true);
   });
 });
 
