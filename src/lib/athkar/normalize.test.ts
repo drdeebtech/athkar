@@ -68,3 +68,38 @@ describe("normalizeSource", () => {
     expect(cat.sectionId).toBe("daily");
   });
 });
+
+describe("displayTitle", () => {
+  it("turns Arabic presentation-form letters into base letters so titles match normal searches", async () => {
+    const { displayTitle } = await import("./normalize");
+    expect(displayTitle(" ﺗﻬنئة المولود له وجوابه ")).toBe("تهنئة المولود له وجوابه");
+    expect(displayTitle("ما يقال في اﻟﻤﺠلس")).toBe("ما يقال في المجلس");
+  });
+
+  it("corrects the known typo in the source title", async () => {
+    const { displayTitle } = await import("./normalize");
+    expect(displayTitle("الدعاء إذا نزل مترلا في سفر أو غيره")).toBe("الدعاء إذا نزل منزلا في سفر أو غيره");
+  });
+});
+
+describe("toBaseLetters", () => {
+  it("leaves the ornate Quran brackets and diacritics untouched", async () => {
+    const { toBaseLetters } = await import("./text");
+    expect(toBaseLetters("﴾قُلْ هُوَ اللَّهُ أَحَدٌ﴿")).toBe("﴾قُلْ هُوَ اللَّهُ أَحَدٌ﴿");
+  });
+});
+
+describe("frozen category ids", () => {
+  it("keeps existing ids when a new category is inserted before them, and numbers the new one next", () => {
+    const ids = { "أذكار الصباح": 1, "أذكار المساء": 2 };
+    const cats = normalizeSource(
+      [row({ category: "دعاء جديد", zekr: "ن" }), row({ category: "أذكار المساء", zekr: "م" }), row({ category: "أذكار الصباح", zekr: "ص" })],
+      ids,
+    );
+    expect(Object.fromEntries(cats.map((c) => [c.title, c.id]))).toEqual({
+      "دعاء جديد": 3,
+      "أذكار المساء": 2,
+      "أذكار الصباح": 1,
+    });
+  });
+});

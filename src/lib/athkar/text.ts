@@ -51,3 +51,12 @@ export function segmentText(text: string): TextSegment[] {
 export function plainReading(text: string): string {
   return stripDiacritics(text).replace(/ٱ/g, "ا");
 }
+
+// Arabic Presentation Forms-B letters (contextual glyph forms such as ﺗ ﻬ ﻟ ﻤ ﺠ).
+// Deliberately excludes Forms-A, which holds the ornate Quran brackets ﴿ ﴾.
+const PRESENTATION_LETTERS = /[\uFE70-\uFEFC]/g;
+
+/** Replaces presentation-form letters with their base letters; leaves marks and brackets alone. */
+export function toBaseLetters(text: string): string {
+  return text.replace(PRESENTATION_LETTERS, (ch) => ch.normalize("NFKC"));
+}
