@@ -126,8 +126,9 @@ export function summarize(progress: ReadingProgress): ProgressSummary {
   return {
     doneCount,
     total,
-    percent: Math.round((doneCount / total) * 100),
-    allDone: doneCount === total,
+    // A situation with no adhkar has nothing to finish: 0%, never "all done".
+    percent: total === 0 ? 0 : Math.round((doneCount / total) * 100),
+    allDone: total > 0 && doneCount === total,
     // Partial counts are undone per zekr; starting over is offered once one is finished.
     canResetAll: doneCount > 0,
   };

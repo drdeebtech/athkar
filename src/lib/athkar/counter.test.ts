@@ -156,3 +156,15 @@ describe("reset of an untouched zekr", () => {
     expect(step.outcome).toEqual({ counted: false, completed: false, nextPending: null, announcement: null });
   });
 });
+
+describe("summarize with no adhkar", () => {
+  it("reports zero progress and is not all done", () => {
+    expect(summarize(createProgress([]))).toEqual({
+      doneCount: 0,
+      total: 0,
+      percent: 0,
+      allDone: false,
+      canResetAll: false,
+    });
+  });
+});
