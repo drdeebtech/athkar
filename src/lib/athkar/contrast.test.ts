@@ -55,6 +55,8 @@ const TEXT_PAIRS: [string, string][] = [
 const AAA_TEXT_PAIRS: [string, string][] = [
   ["muted-foreground", "card"],
   ["muted-foreground", "background"],
+  // The virtue/source panel and done cards (clay-inset, --clay: var(--muted)).
+  ["muted-foreground", "muted"],
 ];
 const RING_SURFACES = ["background", "card", "muted", "secondary"];
 
