@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { resultsCount } from "@/lib/athkar/arabic";
+import { getCategories } from "@/lib/athkar/data";
+import { toSearchPayload } from "@/lib/athkar/search";
 import { click, render } from "@/test/dom";
 import { SearchBox } from "./search-box";
+
+const CATALOGUE: unknown = JSON.parse(JSON.stringify(toSearchPayload(getCategories())));
 
 let cleanup: () => void = () => {};
 afterEach(() => {
@@ -43,10 +48,28 @@ async function search(query: string) {
     // "clay" alone marks the results panel; the input's frame is "clay-inset".
     panel: container.querySelector<HTMLElement>("div.clay")!,
     announcement: container.querySelector('[aria-live="polite"]')?.textContent,
+    links: container.querySelectorAll('a[href^="/athkar/"]').length,
   };
 }
 
 describe("SearchBox", () => {
+  // Hidden panels still hold their content, so the gate shows only in the
+  // panel's hidden attribute and in what the live region announces.
+  it("keeps the panel closed for one letter with a haraka", async () => {
+    serve(CATALOGUE);
+    const { panel, announcement } = await search("أَ");
+    expect(panel.hidden).toBe(true);
+    expect(announcement).toBe("");
+  });
+
+  it("shows results for the ﷲ ligature", async () => {
+    serve(CATALOGUE);
+    const { panel, announcement, links } = await search("ﷲ");
+    expect(panel.hidden).toBe(false);
+    expect(links).toBeGreaterThan(0);
+    expect(announcement).toBe(resultsCount(links));
+  });
+
   it("announces a load error when the index payload is malformed", async () => {
     serve([{ id: 95, title: "دعاء السفر", items: [{ id: "95-1", count: 1 }] }]);
     const { panel, announcement } = await search("سفر");

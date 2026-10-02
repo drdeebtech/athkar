@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { getCategories, getCategory } from "./data";
 import type { Category } from "./types";
-import { createSearchIndex, parseSearchIndex, searchIndex, toSearchPayload } from "./search";
+import { createSearchIndex, isSearchQuery, parseSearchIndex, searchIndex, toSearchPayload } from "./search";
 
 const cats: Category[] = [
   { id: 1, title: "أذكار الصباح", sectionId: "daily", items: [{ id: "1-1", text: "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ", count: 1 }] },
@@ -34,6 +34,16 @@ describe("searchIndex", () => {
     const res = searchIndex(index, "الصباح");
     expect(res[0].category.id).toBe(1);
     expect(res[0].titleMatch).toBe(true);
+  });
+});
+
+describe("isSearchQuery", () => {
+  it("measures the query after normalization, as searchIndex does", () => {
+    expect(isSearchQuery("أَ")).toBe(false);
+    expect(isSearchQuery("ـص")).toBe(false);
+    expect(isSearchQuery("  ")).toBe(false);
+    expect(isSearchQuery("ﷲ")).toBe(true);
+    expect(isSearchQuery("سفر")).toBe(true);
   });
 });
 

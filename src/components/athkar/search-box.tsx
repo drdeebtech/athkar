@@ -4,7 +4,7 @@ import { Loader2, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react";
 import { athkarCount, resultsCount } from "@/lib/athkar/arabic";
-import { parseSearchIndex, searchIndex, type SearchIndex } from "@/lib/athkar/search";
+import { isSearchQuery, parseSearchIndex, searchIndex, type SearchIndex } from "@/lib/athkar/search";
 import { leftContainer } from "@/lib/athkar/focus";
 
 type IndexState = { status: "idle" | "loading" | "error" } | { status: "ready"; index: SearchIndex };
@@ -51,7 +51,7 @@ export function SearchBox() {
     () => (state.status === "ready" ? searchIndex(state.index, deferred).slice(0, MAX_RESULTS) : []),
     [state, deferred],
   );
-  const hasQuery = deferred.trim().length >= 2;
+  const hasQuery = isSearchQuery(deferred);
   const showPanel = open && hasQuery;
 
   return (

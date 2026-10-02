@@ -94,10 +94,24 @@ export function createSearchIndex(categories: readonly SearchableCategory[]): Se
   }));
 }
 
+/** The normalized query, or null when it is too short to search. */
+function toNeedle(query: string): string | null {
+  const needle = normalizeArabic(query);
+  return needle.length >= MIN_QUERY_LENGTH ? needle : null;
+}
+
+/**
+ * True when searchIndex would search for this query. Length counts after
+ * normalization, so "أَ" is one letter while the ligature "ﷲ" is four.
+ */
+export function isSearchQuery(query: string): boolean {
+  return toNeedle(query) !== null;
+}
+
 /** Diacritics- and hamza-insensitive search; title hits rank before text-only hits. */
 export function searchIndex(index: SearchIndex, query: string): SearchResult[] {
-  const needle = normalizeArabic(query);
-  if (needle.length < MIN_QUERY_LENGTH) return [];
+  const needle = toNeedle(query);
+  if (needle === null) return [];
 
   return index
     .map(({ category, title, texts }) => ({
