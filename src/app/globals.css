@@ -8,7 +8,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-baloo), var(--font-ui), sans-serif;
-  --font-zekr: var(--font-amiri), "Traditional Arabic", serif;
+  --font-zekr: var(--font-naskh), "Traditional Arabic", serif;
   --font-heading: var(--font-display);
   --color-ring: var(--ring);
   --color-input: var(--input);

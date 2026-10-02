@@ -12,8 +12,9 @@ import "./globals.css";
 // so builds never fetch from Google Fonts. Each family is subset to its own ranges
 // in src/fonts/unicode-ranges.json, and font-coverage.test.ts checks every character
 // the site renders against the code points each file maps (src/fonts/cmap.json).
-// "Athkar Sans Arabic" is our subset of IBM Plex Sans Arabic, renamed because
-// "Plex" is an OFL Reserved Font Name (see THIRD_PARTY_NOTICES.md).
+// "Athkar Sans Arabic" is our subset of IBM Plex Sans Arabic and "Athkar Naskh" our
+// subset of Scheherazade New, renamed because "Plex", "Scheherazade" and "SIL" are
+// OFL Reserved Font Names (see THIRD_PARTY_NOTICES.md).
 
 const uiFont = localFont({
   variable: "--font-ui",
@@ -31,13 +32,13 @@ const displayFont = localFont({
   display: "swap",
 });
 
-// Amiri is the largest family and mostly sits below the first screen, so it is
-// not preloaded; a metric-matched serif fallback keeps layout shift low.
+// The reading face is only used on situation pages, so it is not preloaded on
+// every page; a metric-matched serif fallback keeps layout shift low.
 const zekrFont = localFont({
-  variable: "--font-amiri",
+  variable: "--font-naskh",
   src: [
-    { path: "../fonts/Amiri-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/Amiri-Bold.woff2", weight: "700", style: "normal" },
+    { path: "../fonts/AthkarNaskh-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/AthkarNaskh-Bold.woff2", weight: "700", style: "normal" },
   ],
   display: "swap",
   preload: false,

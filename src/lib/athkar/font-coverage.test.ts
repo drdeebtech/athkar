@@ -21,7 +21,7 @@ const SHIPPED: Readonly<Record<string, ShippedFont>> = JSON.parse(
 ).fonts;
 
 /** The reading face: adhkar text and the situation page title, both weights. */
-const READING_FACE = ["Amiri-Regular.woff2", "Amiri-Bold.woff2"];
+const READING_FACE = ["AthkarNaskh-Regular.woff2", "AthkarNaskh-Bold.woff2"];
 /** Every other text: the UI face in each shipped weight, and the display face. */
 const UI_FACES = [
   "AthkarSansArabic-Regular.woff2",
@@ -103,7 +103,7 @@ describe("self-hosted font coverage", () => {
     const files = readdirSync(FONTS_DIR);
     // woff2 file prefix -> license of the upstream family it was built from
     const licenses: Record<string, string> = {
-      Amiri: "OFL-Amiri.txt",
+      AthkarNaskh: "OFL-ScheherazadeNew.txt",
       BalooBhaijaan2: "OFL-BalooBhaijaan2.txt",
       AthkarSansArabic: "OFL-IBMPlexSansArabic.txt",
     };
@@ -112,8 +112,8 @@ describe("self-hosted font coverage", () => {
     for (const license of Object.values(licenses)) expect(files).toContain(license);
   });
 
-  it("never ships a font whose file name uses the reserved name Plex", () => {
+  it("never ships a font whose file name uses a Reserved Font Name (Plex, Scheherazade)", () => {
     const files = readdirSync(FONTS_DIR).filter((f) => f.endsWith(".woff2"));
-    expect(files.filter((f) => /plex/i.test(f))).toEqual([]);
+    expect(files.filter((f) => /plex|scheherazade/i.test(f))).toEqual([]);
   });
 });

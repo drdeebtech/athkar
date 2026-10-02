@@ -73,7 +73,7 @@ export default async function CategoryPage({ params }: Props) {
           <SectionIcon name={section.icon} className="size-6" />
         </span>
         <div>
-          <h1 className="font-zekr text-3xl leading-tight font-bold sm:text-4xl">{category.title}</h1>
+          <h1 className="font-zekr text-3xl leading-[1.6] font-bold sm:text-4xl">{category.title}</h1>
           <p className="mt-1 text-sm font-medium opacity-80">{athkarCount(category.items.length)}</p>
         </div>
       </header>
