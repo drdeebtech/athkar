@@ -9,8 +9,9 @@ import { PRE_PAINT_SCRIPT } from "@/lib/athkar/settings";
 import "./globals.css";
 
 // Fonts are self-hosted (src/fonts, OFL-licensed, built by scripts/fonts/build-fonts.py)
-// so builds never fetch from Google Fonts. They are subset to the Arabic + Latin
-// ranges in src/fonts/unicode-ranges.json; font-coverage.test.ts guards that.
+// so builds never fetch from Google Fonts. Each family is subset to its own ranges
+// in src/fonts/unicode-ranges.json, and font-coverage.test.ts checks every character
+// the site renders against the code points each file maps (src/fonts/cmap.json).
 // "Athkar Sans Arabic" is our subset of IBM Plex Sans Arabic, renamed because
 // "Plex" is an OFL Reserved Font Name (see THIRD_PARTY_NOTICES.md).
 

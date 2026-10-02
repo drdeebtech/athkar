@@ -38,8 +38,9 @@ confirms that an ad-supported site is permitted; record the confirmed terms here
 
 Self-hosted in `src/fonts/`, each with its SIL Open Font License 1.1 file
 (`OFL-<Family>.txt`). Source: https://github.com/google/fonts at commit
-9710da1eacb3be272583c3224dcb70f9da6eadbb, subset to Arabic + Latin ranges by
-`scripts/fonts/build-fonts.py` (all OpenType layout features kept).
+9710da1eacb3be272583c3224dcb70f9da6eadbb, subset by `scripts/fonts/build-fonts.py`
+to the ranges in `src/fonts/unicode-ranges.json` (all OpenType layout features
+kept).
 
 - Baloo Bhaijaan 2 (`ofl/baloobhaijaan2`), Ek Type
 - Amiri (`ofl/amiri`), Khaled Hosny and contributors
