@@ -37,7 +37,9 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset }:
     <article
       id={`zekr-${zekr.id}`}
       aria-label={`الذكر ${index + 1} من ${total}`}
-      className={cn("clay scroll-mt-32 transition-opacity duration-500 [--clay-r:2rem]", done && "opacity-75")}
+      // Done cards get a muted clay surface instead of fading: fading the whole card
+      // dropped secondary text below WCAG AA contrast.
+      className={cn("clay scroll-mt-32 [--clay-r:2rem]", done && "[--clay:var(--muted)]")}
     >
       <header className="flex items-center justify-between px-5 pt-4 text-sm text-muted-foreground sm:px-7">
         <span className="font-display">
@@ -82,7 +84,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset }:
           aria-label={done ? "تم هذا الذكر" : `اضغط للعد، المتبقي ${counter.remaining}`}
           style={{ "--hue": done ? 150 : 60 } as React.CSSProperties}
           className={cn(
-            "clay glaze flex h-16 flex-1 items-center justify-center gap-3 [--clay-r:9999px] select-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "clay glaze flex h-16 flex-1 items-center justify-center gap-3 [--clay-r:9999px] select-none focus-visible:ring-3 focus-visible:ring-ring",
             // Alternate the animation name so the squish replays on every tap without
             // remounting the button (a remount would drop keyboard and screen-reader focus).
             done ? "cursor-default" : cn("clay-press", counter.remaining % 2 ? "squish" : "squish-alt"),
@@ -135,7 +137,7 @@ function IconButton({
       aria-disabled={disabled}
       aria-label={label}
       title={label}
-      className="clay-sm clay-press grid size-12 shrink-0 place-items-center text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-disabled:cursor-default aria-disabled:opacity-40"
+      className="clay-sm clay-press grid size-12 shrink-0 place-items-center text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring aria-disabled:cursor-default aria-disabled:opacity-40"
     >
       {children}
     </button>

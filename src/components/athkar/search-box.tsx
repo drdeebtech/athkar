@@ -63,7 +63,7 @@ export function SearchBox() {
       <label htmlFor={inputId} className="sr-only">
         ابحث عن ذكر أو موقف
       </label>
-      <div className="clay-inset flex items-center gap-2 px-5 text-foreground [--clay-r:9999px] focus-within:ring-3 focus-within:ring-ring/40">
+      <div className="clay-inset flex items-center gap-2 px-5 text-foreground [--clay-r:9999px] focus-within:ring-3 focus-within:ring-ring">
         <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
         <input
           id={inputId}
@@ -85,7 +85,7 @@ export function SearchBox() {
           onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
           placeholder="ابحث: السفر، المطر، الهم، الكرب..."
           autoComplete="off"
-          className="h-14 w-full bg-transparent text-lg outline-none placeholder:text-muted-foreground/80 [&::-webkit-search-cancel-button]:appearance-none"
+          className="h-14 w-full bg-transparent text-lg outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
         />
         {state.status === "loading" && <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden="true" />}
         {query && (

@@ -130,7 +130,7 @@ export function ReadingSettingsButton() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => (open ? close(false) : setOpen(true))}
-        className="clay-sm clay-press flex items-center gap-1.5 px-3.5 py-2 text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="clay-sm clay-press flex items-center gap-1.5 px-3.5 py-2 text-foreground focus-visible:ring-3 focus-visible:ring-ring"
       >
         <Settings2 className="size-5" aria-hidden="true" />
         <span className="hidden sm:inline">إعدادات القراءة</span>
@@ -222,7 +222,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       />
       <span
         aria-hidden="true"
-        className="clay-inset relative h-7 w-12 transition-colors [--clay-r:9999px] after:absolute after:top-1 after:right-1 after:size-5 after:rounded-full after:bg-card after:shadow-[0_3px_6px_-2px_var(--clay-drop),inset_0_2px_3px_var(--clay-hi)] after:transition-transform peer-checked:bg-primary peer-checked:after:-translate-x-5 peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50"
+        className="clay-inset relative h-7 w-12 transition-colors [--clay-r:9999px] after:absolute after:top-1 after:right-1 after:size-5 after:rounded-full after:bg-card after:shadow-[0_3px_6px_-2px_var(--clay-drop),inset_0_2px_3px_var(--clay-hi)] after:transition-transform peer-checked:bg-primary peer-checked:after:-translate-x-5 peer-focus-visible:ring-3 peer-focus-visible:ring-ring"
       />
     </label>
   );
