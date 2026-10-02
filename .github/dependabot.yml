@@ -18,11 +18,13 @@ updates:
       # Remove once eslint-config-next supports ESLint 10.
       - dependency-name: eslint
         update-types: ["version-update:semver-major"]
-      # typescript-eslint 8.71 (used by eslint-config-next) supports TypeScript
-      # below 6.1 ("typescript-eslint does not support TS 7.0").
-      # Remove once it supports TypeScript 7.
+      # The installed typescript-eslint (8.57, via eslint-config-next) supports
+      # TypeScript below 6.0; the newest (8.71) supports below 6.1, and none
+      # supports 7 ("typescript-eslint does not support TS 7.0").
+      # Raise to ">=6.1.0" when the lockfile moves to typescript-eslint >= 8.71
+      # together with TypeScript 6.0; remove once TypeScript 7 is supported.
       - dependency-name: typescript
-        versions: [">=6.1.0"]
+        versions: [">=6.0.0"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
