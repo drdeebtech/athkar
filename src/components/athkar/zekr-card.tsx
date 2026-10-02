@@ -43,14 +43,14 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
       // dropped secondary text below WCAG AA contrast.
       className={cn("clay scroll-mt-32 [--clay-r:2rem]", done && "[--clay:var(--muted)]")}
     >
-      <header className="flex items-center justify-between px-5 pt-4 text-sm text-muted-foreground sm:px-7">
+      <header className="flex items-center justify-between px-4 pt-4 text-sm text-muted-foreground sm:px-7">
         <span className="font-display">
           الذكر <span className="text-base font-bold text-foreground">{index + 1}</span> من {total}
         </span>
         <span className="clay-sm glaze px-3 py-1 text-sm font-bold [--hue:60]">{timesCount(counter.target)}</span>
       </header>
 
-      <div className="px-5 pt-3 pb-5 sm:px-7">
+      <div className="px-4 pt-3 pb-5 sm:px-7">
         <ZekrText text={zekr.text} />
 
         {(zekr.virtue || zekr.reference) && (

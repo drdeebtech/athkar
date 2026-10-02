@@ -370,3 +370,17 @@ describe("ZekrList marked text", () => {
     expect(spans("span.seg-quran")).toEqual(["قُلْ هُوَ اللَّهُ أَحَدٌ"]);
   });
 });
+
+describe("ZekrList card padding", () => {
+  it("lines the header, the zekr text and the buttons up on phones", () => {
+    // At 360px every pixel of measure counts: with 20px instead of 16px, the first line
+    // of Ayat al-Kursi on the morning and evening pages missed one line by 0.6px.
+    const { card } = renderList([{ id: "4-1", text: "سُبْحَانَ اللهِ", count: 1 }]);
+    const parts = {
+      header: card("4-1").querySelector("header"),
+      text: card("4-1").querySelector(".zekr-text")?.parentElement,
+      footer: card("4-1").querySelector("footer"),
+    };
+    for (const [part, el] of Object.entries(parts)) expect([...(el?.classList ?? [])], part).toContain("px-4");
+  });
+});
