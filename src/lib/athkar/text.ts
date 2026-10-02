@@ -30,8 +30,10 @@ const MARKERS = /﴿([^﴾]*)﴾|\(\(([\s\S]*?)\)\)/g;
 export function segmentText(text: string): TextSegment[] {
   const segments: TextSegment[] = [];
   let cursor = 0;
+  // Plain text keeps whitespace-only runs (the space between two marked spans);
+  // marked segments must contain something.
   const push = (kind: SegmentKind, value: string) => {
-    if (value.trim().length > 0) segments.push({ kind, text: value });
+    if (kind === "plain" ? value.length > 0 : value.trim().length > 0) segments.push({ kind, text: value });
   };
 
   for (const match of text.matchAll(MARKERS)) {

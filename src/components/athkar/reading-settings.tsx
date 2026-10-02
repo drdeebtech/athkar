@@ -11,6 +11,7 @@ import {
   type ReadingSettings,
   type Theme,
 } from "@/lib/athkar/settings";
+import { leftContainer } from "@/lib/athkar/focus";
 import { cn } from "@/lib/utils";
 
 interface SettingsContextValue {
@@ -123,7 +124,7 @@ export function ReadingSettingsButton() {
   }, [open, close]);
 
   return (
-    <div ref={wrapper} className="relative">
+    <div ref={wrapper} className="relative" onBlur={(e) => leftContainer(e.currentTarget, e.relatedTarget) && close(false)}>
       <button
         ref={trigger}
         type="button"
@@ -143,7 +144,7 @@ export function ReadingSettingsButton() {
         aria-label="إعدادات القراءة"
         tabIndex={-1}
         hidden={!open}
-        className="clay absolute left-0 top-full z-50 mt-3 w-76 p-5 text-popover-foreground outline-none [--clay-r:1.75rem]"
+        className="clay absolute left-0 top-full z-50 mt-3 w-[min(19rem,calc(100vw-2rem))] p-5 text-popover-foreground outline-none [--clay-r:1.75rem]"
       >
         <div className="mb-3 flex items-center justify-between">
           <p className="font-display text-lg font-extrabold">إعدادات القراءة</p>

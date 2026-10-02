@@ -54,9 +54,17 @@ export default async function CategoryPage({ params }: Props) {
           <li>
             <Link href="/" className="hover:text-foreground">الرئيسية</Link>
           </li>
+          {section && (
+            <>
+              <li aria-hidden="true">/</li>
+              <li>
+                <Link href={`/#section-${section.id}`} className="hover:text-foreground">{section.title}</Link>
+              </li>
+            </>
+          )}
           <li aria-hidden="true">/</li>
-          <li>
-            <Link href={`/#section-${section?.id}`} className="hover:text-foreground">{section?.title}</Link>
+          <li aria-current="page" className="text-foreground">
+            {category.title}
           </li>
         </ol>
       </nav>

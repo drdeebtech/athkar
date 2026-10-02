@@ -34,3 +34,11 @@ describe("updateSettings", () => {
     });
   });
 });
+
+describe("updateSettings with non-finite font steps", () => {
+  it("keeps the current step instead of storing NaN or Infinity", () => {
+    const current = { ...DEFAULT_SETTINGS, fontStep: 3 };
+    expect(updateSettings(current, { fontStep: Number.NaN }).fontStep).toBe(3);
+    expect(updateSettings(current, { fontStep: Number.POSITIVE_INFINITY }).fontStep).toBe(3);
+  });
+});

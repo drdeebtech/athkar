@@ -48,7 +48,6 @@ export const metadata: Metadata = {
   title: { default: `${siteConfig.name} | ${siteConfig.tagline}`, template: `%s | ${siteConfig.name}` },
   description: siteConfig.description,
   applicationName: siteConfig.name,
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "ar_AR",

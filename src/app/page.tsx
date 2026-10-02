@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "@/components/athkar/ad-slot";
 import { BrandArt } from "@/components/athkar/brand-art";
@@ -5,6 +6,10 @@ import { SearchBox } from "@/components/athkar/search-box";
 import { SectionGrid } from "@/components/athkar/section-grid";
 import { siteConfig } from "@/config/site";
 import { getCategories, getSections, getTotalAthkar } from "@/lib/athkar/data";
+
+// Canonical lives here, not in the root layout, so the 404 page does not
+// inherit a canonical pointing at the home page.
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const QUICK_LINKS = ["أذكار الصباح", "أذكار المساء", "أذكار النوم", "الأذكار بعد السلام من الصلاة"];
 

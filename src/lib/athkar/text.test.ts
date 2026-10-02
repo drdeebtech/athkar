@@ -50,3 +50,17 @@ describe("plainReading", () => {
     expect(plainReading("مَلِكِ ٱلنَّاسِ")).toBe("ملك الناس");
   });
 });
+
+describe("segmentText whitespace between markers", () => {
+  it("keeps the space between two adjacent marked segments", () => {
+    expect(segmentText("((أ)) ((ب))")).toEqual([
+      { kind: "hadith", text: "أ" },
+      { kind: "plain", text: " " },
+      { kind: "hadith", text: "ب" },
+    ]);
+  });
+
+  it("still drops empty and whitespace-only marked segments", () => {
+    expect(segmentText("(( ))نص")).toEqual([{ kind: "plain", text: "نص" }]);
+  });
+});
