@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { getCategories, getCategory, getSections, getSituation, getTotalAthkar } from "./data";
+import {
+  FEATURED_IDS,
+  getCategories,
+  getCategory,
+  getFeatured,
+  getSections,
+  getSituation,
+  getTotalAthkar,
+} from "./data";
 import { SECTIONS } from "./sections";
 
 describe("data", () => {
@@ -64,5 +72,20 @@ describe("getSituation", () => {
     expect(getSituation(-1)).toBeUndefined();
     expect(getSituation(99999)).toBeUndefined();
     expect(getSituation("abc")).toBeUndefined();
+  });
+});
+
+describe("featured situations", () => {
+  it("features morning, evening, sleep and after-prayer adhkar, in that order", () => {
+    expect(getFeatured().map((c) => c.title)).toEqual([
+      "أذكار الصباح",
+      "أذكار المساء",
+      "أذكار النوم",
+      "الأذكار بعد السلام من الصلاة",
+    ]);
+  });
+
+  it("resolves every featured id, keeping the display order", () => {
+    expect(getFeatured().map((c) => c.id)).toEqual(FEATURED_IDS);
   });
 });

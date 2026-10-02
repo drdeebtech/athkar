@@ -16,6 +16,14 @@ export interface Situation {
 const CATEGORIES: readonly Category[] = normalizeSource(source as SourceRow[], categoryIds);
 const BY_ID: ReadonlyMap<number, Category> = new Map(CATEGORIES.map((c) => [c.id, c]));
 
+/**
+ * Featured situations in display order: morning, evening, sleep and after
+ * prayer. The home page's quick links and the sitemap's top priority both read
+ * this list. It holds ids rather than titles because ids are frozen in
+ * category-ids.json.
+ */
+export const FEATURED_IDS: readonly number[] = [1, 2, 28, 26];
+
 export function getCategories(): readonly Category[] {
   return CATEGORIES;
 }
@@ -23,6 +31,11 @@ export function getCategories(): readonly Category[] {
 export function getCategory(id: number | string): Category | undefined {
   const n = typeof id === "number" ? id : Number(id);
   return Number.isInteger(n) ? BY_ID.get(n) : undefined;
+}
+
+/** The featured situations in display order. An id with no category is skipped. */
+export function getFeatured(): readonly Category[] {
+  return FEATURED_IDS.map((id) => BY_ID.get(id)).filter((c) => c !== undefined);
 }
 
 export function getSections(): SectionWithCategories[] {

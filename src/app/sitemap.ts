@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
 import { siteConfig } from "@/config/site";
+import { FEATURED_IDS, getCategories } from "@/lib/athkar/data";
 
 export const dynamic = "force-static";
-import { getCategories } from "@/lib/athkar/data";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
@@ -11,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...getCategories().map((c) => ({
       url: `${siteConfig.url}/athkar/${c.id}`,
       changeFrequency: "monthly" as const,
-      priority: c.id <= 2 ? 0.9 : 0.7,
+      priority: FEATURED_IDS.includes(c.id) ? 0.9 : 0.7,
     })),
   ];
 }
