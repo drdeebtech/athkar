@@ -16,8 +16,22 @@ describe("category-ids.json (URLs are /athkar/{id}; never renumber)", () => {
     expect(values.every((v) => Number.isInteger(v) && v > 0)).toBe(true);
   });
 
-  it("matches the ids already published at launch (first-appearance order)", () => {
-    const positional = normalizeSource(source as SourceRow[]);
-    expect(Object.fromEntries(positional.map((c) => [c.title, c.id]))).toEqual(ids);
+  it("keeps the ids published at launch", () => {
+    // Spot checks against URLs that were live before the map existed.
+    expect(ids).toMatchObject({
+      "أذكار الصباح": 1,
+      "أذكار المساء": 2,
+      "أذكار النوم": 28,
+      "دعاء السفر": 95,
+      "الدعاء إذا نزل منزلا في سفر أو غيره": 103,
+      "ذكر الرجوع من السفر": 104,
+    });
+  });
+
+  it("gives every category its mapped id even when the source order changes", () => {
+    const reversed = [...(source as SourceRow[])].reverse();
+    const cats = normalizeSource(reversed, ids);
+    expect(cats).toHaveLength(Object.keys(ids).length);
+    for (const c of cats) expect(c.id).toBe(ids[c.title as keyof typeof ids]);
   });
 });
