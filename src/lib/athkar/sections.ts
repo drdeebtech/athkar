@@ -100,10 +100,10 @@ const LOOKUP: ReadonlyMap<string, SectionId> = new Map(
   ),
 );
 
-export function sectionForTitle(title: string): SectionId;
-export function sectionForTitle(title: string, options: { strict: true }): SectionId | null;
-export function sectionForTitle(title: string, options?: { strict: boolean }): SectionId | null {
-  const found = LOOKUP.get(normalizeArabic(title));
-  if (found) return found;
-  return options?.strict ? null : "misc";
+/**
+ * The section a situation title belongs to, ignoring diacritics and surrounding
+ * whitespace. Unknown titles fall back to misc.
+ */
+export function sectionForTitle(title: string): SectionId {
+  return LOOKUP.get(normalizeArabic(title)) ?? "misc";
 }
