@@ -70,3 +70,9 @@ describe("font scale in globals.css", () => {
     expect(GLOBALS_CSS.match(/--zekr-size\s*:/g)).toHaveLength(1);
   });
 });
+
+describe("bold text in globals.css", () => {
+  it('makes the zekr text bold while <html> has data-bold="on", the value applySettingsToRoot sets', () => {
+    expect(cssValue('html[data-bold="on"] .zekr-text', "font-weight")).toBe("700");
+  });
+});

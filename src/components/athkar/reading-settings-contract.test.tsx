@@ -5,6 +5,7 @@
  * tests run the real script string and the real runtime path on the same input.
  */
 import { act } from "react";
+import ts from "typescript";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   FONT_STEPS,
@@ -92,6 +93,11 @@ function parseStored(stored: string | null): unknown {
   }
 }
 
+/** Compiles JavaScript `source` for `target` with the TypeScript compiler. */
+function emitFor(source: string, target: ts.ScriptTarget): string {
+  return ts.transpileModule(source, { compilerOptions: { target, module: ts.ModuleKind.ESNext } }).outputText;
+}
+
 /** Calls an apply function directly with the parsed, unvalidated stored value. */
 function runDirect(apply: typeof applySettingsToRoot, stored: string | null, prefersDark: boolean): RootState {
   resetRoot();
@@ -103,6 +109,7 @@ afterEach(() => {
   resetRoot();
   localStorage.clear();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 const PATHS = [
@@ -148,6 +155,8 @@ const STORED: ReadonlyArray<readonly [label: string, stored: string | null]> = [
   ["an empty string", ""],
   ["font step 99", json({ fontStep: 99 })],
   ["font step -1", json({ fontStep: -1 })],
+  ["a font step one past the scale", json({ fontStep: FONT_STEPS.length })],
+  ["a non-integer font step", json({ fontStep: 1.5 })],
   ["a non-number font step", json({ fontStep: "3" })],
   ["an unknown theme", json({ theme: "neon" })],
 ];
@@ -159,6 +168,20 @@ const MATRIX = STORED.flatMap(([label, stored]) =>
 describe("pre-paint script and runtime path", () => {
   it.each(MATRIX)("leave <html> identical for $label (prefers dark: $prefersDark)", ({ stored, prefersDark }) => {
     expect(runPrePaint(stored, prefersDark)).toEqual(runRuntime(stored, prefersDark));
+  });
+});
+
+describe("pre-paint script with storage blocked", () => {
+  it("swallows the error and leaves <html> untouched", () => {
+    const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("The operation is insecure.", "SecurityError");
+    });
+    resetRoot();
+    stubPrefersDark(true);
+    expect(() => new Function(PRE_PAINT_SCRIPT)()).not.toThrow();
+    expect(getItem).toHaveBeenCalledWith(SETTINGS_KEY);
+    // Not even the dark default this device prefers is applied: the stylesheet's defaults stand.
+    expect(recordRoot()).toEqual({ className: "", attributes: {}, zekrSize: "" });
   });
 });
 
@@ -174,6 +197,13 @@ describe("applySettingsToRoot", () => {
       expect(runDirect(isolated, stored, prefersDark)).toEqual(runDirect(applySettingsToRoot, stored, prefersDark));
     });
   });
+
+  it("keeps to ES2017 syntax, so no compile rewrites the inlined source or adds helpers to it", () => {
+    // Emitting for ES2017 rewrites any newer syntax (spread, ?., ??, catch without a binding, ...),
+    // while emitting for ESNext rewrites none, so the two emits differ exactly when newer syntax is present.
+    const source = applySettingsToRoot.toString();
+    expect(emitFor(source, ts.ScriptTarget.ES2017)).toBe(emitFor(source, ts.ScriptTarget.ESNext));
+  });
 });
 
 // Literal on purpose: the sizes readers have always seen per step; FONT_STEPS must not drift from them.
@@ -183,6 +213,8 @@ const FONT_SIZE: ReadonlyArray<readonly [label: string, stored: string | null, s
   ["missing settings", null, "1.75rem"],
   ...RENDERED_SIZES.map((size, step) => [`font step ${step}`, json({ fontStep: step }), size] as const),
   ["font step 99", json({ fontStep: 99 }), "1.75rem"],
+  ["a font step one past the scale", json({ fontStep: FONT_STEPS.length }), "1.75rem"],
+  ["a non-integer font step", json({ fontStep: 1.5 }), "1.75rem"],
   ["invalid JSON", "{", "1.75rem"],
 ];
 
