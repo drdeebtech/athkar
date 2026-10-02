@@ -195,6 +195,8 @@
     text-align: start;
     white-space: pre-line;
     overflow-wrap: anywhere;
+    /* Avoids one-word last lines; browsers without support ignore it. */
+    text-wrap: pretty;
   }
   @media (min-width: 640px) {
     .zekr-text {
