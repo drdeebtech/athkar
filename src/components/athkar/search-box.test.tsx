@@ -76,4 +76,14 @@ describe("SearchBox", () => {
     expect(panel.hidden).toBe(false);
     expect(announcement).toBe("تعذّر تحميل البحث.");
   });
+
+  // Indexing alone would accept this payload and link to "/athkar/95"; only
+  // validating it with parseSearchIndex rejects the string id.
+  it("announces a load error when a situation id is not a number", async () => {
+    serve([{ id: "95", title: "دعاء السفر", items: [{ id: "95-1", text: "دعاء السفر", count: 1 }] }]);
+    const { panel, announcement, links } = await search("سفر");
+    expect(panel.hidden).toBe(false);
+    expect(links).toBe(0);
+    expect(announcement).toBe("تعذّر تحميل البحث.");
+  });
 });
