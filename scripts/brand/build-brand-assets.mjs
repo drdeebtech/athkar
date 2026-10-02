@@ -4,8 +4,14 @@
  * <source-dir> must contain logo.png, hero-rehal.png, hero-beads.png, og.png
  * (2K originals; job IDs are listed in docs/brand/README.md).
  */
+import { existsSync } from "node:fs";
 import sharp from "sharp";
-const S = process.argv[2], OUT = process.argv[3];
+
+const [S, OUT] = process.argv.slice(2);
+if (!S || !OUT || !existsSync(S) || !existsSync(OUT)) {
+  console.error("usage: node scripts/brand/build-brand-assets.mjs <source-dir> <project-root>");
+  process.exit(1);
+}
 const SAND = { r: 244, g: 237, b: 224, alpha: 1 };
 
 const trimmed = async (file) => sharp(await sharp(`${S}/${file}`).trim({ threshold: 10 }).png().toBuffer());
