@@ -138,3 +138,43 @@ describe("ReadingSettingsProvider applies settings to <html>", () => {
     expect(root().classList.contains("dark")).toBe(true);
   });
 });
+
+describe("ReadingSettingsProvider without matchMedia", () => {
+  it("mounts with the system theme instead of crashing the tree", async () => {
+    // Fresh modules: the settings store caches its snapshot at module level, so an
+    // earlier test's theme would otherwise skip the system-theme effect entirely.
+    vi.resetModules();
+    const { act } = await import("react");
+    const { createRoot } = await import("react-dom/client");
+    const { ReadingSettingsButton, ReadingSettingsProvider } = await import("./reading-settings");
+    const errors: unknown[] = [];
+    const onError = (e: ErrorEvent) => {
+      errors.push(e.error);
+      e.preventDefault();
+    };
+    window.addEventListener("error", onError);
+    vi.stubGlobal("matchMedia", undefined);
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      expect(() =>
+        act(() =>
+          root.render(
+            <ReadingSettingsProvider>
+              <ReadingSettingsButton />
+            </ReadingSettingsProvider>,
+          ),
+        ),
+      ).not.toThrow();
+      expect(errors).toEqual([]);
+      expect(container.querySelector("button[aria-expanded]")).not.toBeNull();
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+      window.removeEventListener("error", onError);
+      vi.unstubAllGlobals();
+    }
+  });
+});

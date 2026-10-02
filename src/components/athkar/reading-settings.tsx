@@ -78,7 +78,9 @@ export function ReadingSettingsProvider({ children }: { children: React.ReactNod
   const settings = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
-    if (settings.theme !== "system") return;
+    // Without matchMedia there is no system preference to follow; applyToDocument
+    // already resolves "system" to light in that case.
+    if (settings.theme !== "system" || typeof matchMedia !== "function") return;
     const mq = matchMedia(PREFERS_DARK_QUERY);
     const onChange = () => applyToDocument(settings);
     mq.addEventListener("change", onChange);
