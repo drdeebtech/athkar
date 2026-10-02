@@ -2,9 +2,10 @@ import { defineConfig } from "vitest/config";
 import path from "node:path";
 
 export default defineConfig({
-  resolve: { alias: { "@": path.resolve(__dirname, "src") } },
-  // Component tests render TSX with React 19's automatic JSX runtime.
-  esbuild: { jsx: "automatic" },
+  resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
+  // Component tests render TSX with React 19's automatic JSX runtime. Vite 8 compiles
+  // with Oxc (the esbuild option is ignored there), so set it on oxc.
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
     coverage: {
