@@ -58,3 +58,25 @@ describe("text files with Arabic content", () => {
     expect(block).toMatch(/^\s+Content-Type:\s*text\/plain;\s*charset=utf-8\s*$/im);
   });
 });
+
+describe("search indexing of non-page files", () => {
+  const blocks = HEADERS.split(/\n\s*\n/);
+  const indexOfPath = (path: string) => blocks.findIndex((b) => b.split("\n").some((l) => l.trim() === path));
+  const block = (path: string) => blocks[indexOfPath(path)] ?? "";
+
+  it("keeps Next.js RSC payloads (.txt) out of search results", () => {
+    expect(block("/*.txt")).toMatch(/^\s+X-Robots-Tag:\s*noindex\s*$/m);
+  });
+
+  it("detaches noindex from llms.txt and robots.txt, after the .txt rule", () => {
+    for (const path of ["/llms.txt", "/robots.txt"]) {
+      expect(block(path)).toMatch(/^\s+! X-Robots-Tag\s*$/m);
+      expect(indexOfPath(path)).toBeGreaterThan(indexOfPath("/*.txt"));
+    }
+  });
+
+  it("never sets X-Robots-Tag on pages", () => {
+    const setting = blocks.filter((b) => /^\s+X-Robots-Tag:/m.test(b)).map((b) => b.split("\n").find((l) => l.startsWith("/")));
+    expect(setting).toEqual(["/*.txt"]);
+  });
+});

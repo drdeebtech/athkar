@@ -24,6 +24,16 @@
 /brand/*
   Cache-Control: public, max-age=604800
 
+# Next.js RSC payloads (index.txt, athkar/1.txt, **/__next.*.txt) are fetched by the
+# client router, not pages: keep them out of search results. Pages, the sitemap
+# and robots.txt are unaffected; llms.txt and robots.txt detach the header below.
+/*.txt
+  X-Robots-Tag: noindex
+
 # Arabic text: without an explicit charset browsers decode it as windows-1252.
 /llms.txt
   Content-Type: text/plain; charset=utf-8
+  ! X-Robots-Tag
+
+/robots.txt
+  ! X-Robots-Tag
