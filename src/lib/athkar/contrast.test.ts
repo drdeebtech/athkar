@@ -93,8 +93,11 @@ describe("hadith is not marked by colour alone (WCAG 1.4.1)", () => {
     ["after", "))"],
   ])("draws %s each hadith span %s, hidden from screen readers", (side, marks) => {
     const rule = new RegExp(`\\.seg-hadith::${side}\\s*\\{([^}]*)\\}`).exec(CSS)?.[1] ?? "";
-    expect(rule).toContain(`content: "${marks}";`);
-    expect(rule).toContain(`content: "${marks}" / "";`);
+    const [plain, withAlt] = [rule.indexOf(`content: "${marks}";`), rule.indexOf(`content: "${marks}" / "";`)];
+    expect(plain).toBeGreaterThanOrEqual(0);
+    // The alt-text form must come last: browsers that support it override the plain
+    // fallback, and the rest drop it as invalid. Reversed, screen readers read the marks.
+    expect(withAlt).toBeGreaterThan(plain);
   });
 });
 
