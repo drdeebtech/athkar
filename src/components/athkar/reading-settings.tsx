@@ -147,7 +147,7 @@ export function ReadingSettingsButton() {
         aria-label="إعدادات القراءة"
         tabIndex={-1}
         hidden={!open}
-        className="clay absolute left-0 top-full z-50 mt-3 w-[min(19rem,calc(100vw-2rem))] p-5 text-popover-foreground outline-none [--clay-r:1.75rem]"
+        className="clay absolute left-0 top-full z-50 mt-3 max-h-[calc(100dvh-6rem)] w-[min(19rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain p-5 text-popover-foreground outline-none [--clay-r:1.75rem]"
       >
         <div className="mb-3 flex items-center justify-between">
           <p className="font-display text-lg font-extrabold">إعدادات القراءة</p>
@@ -156,7 +156,7 @@ export function ReadingSettingsButton() {
           </button>
         </div>
 
-        <div className="space-y-4 text-sm">
+        <div className="space-y-4 text-base">
           <div>
             <p className="mb-2 text-muted-foreground">حجم الخط</p>
             <div className="flex items-center justify-between gap-2">

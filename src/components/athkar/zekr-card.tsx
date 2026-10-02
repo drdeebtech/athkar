@@ -54,7 +54,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
         <ZekrText text={zekr.text} />
 
         {(zekr.virtue || zekr.reference) && (
-          <details open={expanded} className="group clay-inset mt-4 text-sm [--clay-r:1.25rem]">
+          <details open={expanded} className="group clay-inset mt-4 text-base [--clay-r:1.25rem]">
             <summary className="cursor-pointer list-none px-4 py-3 font-medium text-muted-foreground marker:hidden hover:text-foreground">
               <span className="group-open:hidden">عرض الفضل والمصدر</span>
               <span className="hidden group-open:inline">إخفاء الفضل والمصدر</span>
