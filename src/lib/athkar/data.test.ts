@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { getCategories, getCategory, getNeighbours, getSections, getTotalAthkar } from "./data";
+import {
+  FEATURED_IDS,
+  getCategories,
+  getCategory,
+  getFeatured,
+  getSections,
+  getSituation,
+  getTotalAthkar,
+} from "./data";
+import { SECTIONS } from "./sections";
 
 describe("data", () => {
   it("loads every row of the vendored source", () => {
@@ -20,11 +29,63 @@ describe("data", () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(getSections().some((s) => s.id === "misc")).toBe(false);
   });
+});
+
+describe("getSituation", () => {
+  const readingOrder = getSections().flatMap((s) => s.categories);
+
+  it("resolves a situation with its section", () => {
+    const situation = getSituation(1);
+    expect(situation?.category.title).toBe("أذكار الصباح");
+    expect(situation?.section.id).toBe("daily");
+    expect(situation?.section.hue).toBe(60);
+    expect(situation?.section).toEqual(SECTIONS.find((s) => s.id === "daily"));
+    expect(getSituation("1")?.category.id).toBe(1);
+  });
+
+  it("gives every situation the section that groups it", () => {
+    for (const section of getSections()) {
+      for (const category of section.categories) {
+        expect(getSituation(category.id)?.section.id).toBe(section.id);
+      }
+    }
+  });
 
   it("links neighbours in reading order", () => {
-    const first = getSections()[0].categories[0];
-    expect(getNeighbours(first.id).prev).toBeUndefined();
-    expect(getNeighbours(first.id).next).toBeDefined();
-    expect(getNeighbours(-1)).toEqual({});
+    readingOrder.forEach((category, i) => {
+      const situation = getSituation(category.id);
+      expect(situation?.prev).toBe(readingOrder[i - 1]);
+      expect(situation?.next).toBe(readingOrder[i + 1]);
+    });
+  });
+
+  it("has no previous situation for the first and no next one for the last", () => {
+    const first = getSituation(readingOrder[0].id);
+    expect(first?.prev).toBeUndefined();
+    expect(first?.next).toBeDefined();
+    const last = getSituation(readingOrder[readingOrder.length - 1].id);
+    expect(last?.prev).toBeDefined();
+    expect(last?.next).toBeUndefined();
+  });
+
+  it("returns undefined for unknown ids", () => {
+    expect(getSituation(-1)).toBeUndefined();
+    expect(getSituation(99999)).toBeUndefined();
+    expect(getSituation("abc")).toBeUndefined();
+  });
+});
+
+describe("featured situations", () => {
+  it("features morning, evening, sleep and after-prayer adhkar, in that order", () => {
+    expect(getFeatured().map((c) => c.title)).toEqual([
+      "أذكار الصباح",
+      "أذكار المساء",
+      "أذكار النوم",
+      "الأذكار بعد السلام من الصلاة",
+    ]);
+  });
+
+  it("resolves every featured id, keeping the display order", () => {
+    expect(getFeatured().map((c) => c.id)).toEqual(FEATURED_IDS);
   });
 });

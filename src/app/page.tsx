@@ -6,7 +6,7 @@ import { JsonLd } from "@/components/athkar/json-ld";
 import { SearchBox } from "@/components/athkar/search-box";
 import { SectionGrid } from "@/components/athkar/section-grid";
 import { siteConfig } from "@/config/site";
-import { getCategories, getSections, getTotalAthkar } from "@/lib/athkar/data";
+import { getCategories, getFeatured, getSections, getTotalAthkar } from "@/lib/athkar/data";
 import { websiteJsonLd } from "@/lib/athkar/structured-data";
 
 // Canonical and og:url live here, not in the root layout, so the 404 page does
@@ -16,12 +16,10 @@ export async function generateMetadata(_: unknown, parent: ResolvingMetadata): P
   return { alternates: { canonical: "/" }, openGraph: { ...inherited.openGraph, url: "/" } };
 }
 
-const QUICK_LINKS = ["أذكار الصباح", "أذكار المساء", "أذكار النوم", "الأذكار بعد السلام من الصلاة"];
-
 export default function HomePage() {
   const sections = getSections();
   const categories = getCategories();
-  const quick = QUICK_LINKS.map((t) => categories.find((c) => c.title === t)).filter((c) => c !== undefined);
+  const quick = getFeatured();
 
   return (
     <>

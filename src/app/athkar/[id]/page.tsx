@@ -6,9 +6,8 @@ import { JsonLd } from "@/components/athkar/json-ld";
 import { SectionIcon } from "@/components/athkar/section-icon";
 import { ZekrList } from "@/components/athkar/zekr-list";
 import { siteConfig } from "@/config/site";
-import { getCategories, getCategory, getNeighbours } from "@/lib/athkar/data";
+import { getCategories, getCategory, getSituation } from "@/lib/athkar/data";
 import { athkarCount } from "@/lib/athkar/arabic";
-import { SECTIONS } from "@/lib/athkar/sections";
 import { breadcrumbJsonLd } from "@/lib/athkar/structured-data";
 import { describeCategory } from "@/lib/athkar/describe";
 
@@ -42,29 +41,26 @@ export async function generateMetadata({ params }: Props, parent: ResolvingMetad
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const category = getCategory((await params).id);
-  if (!category) notFound();
+  const situation = getSituation((await params).id);
+  if (!situation) notFound();
 
-  const section = SECTIONS.find((s) => s.id === category.sectionId);
-  const { prev, next } = getNeighbours(category.id);
+  const { category, section, prev, next } = situation;
   const siblings = getCategories().filter((c) => c.sectionId === category.sectionId && c.id !== category.id);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pt-6 pb-4" style={{ "--hue": section?.hue ?? 165 } as React.CSSProperties}>
+    <div className="mx-auto max-w-3xl px-4 pt-6 pb-4" style={{ "--hue": section.hue } as React.CSSProperties}>
       <JsonLd data={breadcrumbJsonLd(siteConfig, category)} />
       <nav aria-label="مسار التصفح" className="mb-4 px-2 text-sm text-muted-foreground">
         <ol className="flex flex-wrap items-center gap-1">
           <li>
             <Link href="/" className="hover:text-foreground">الرئيسية</Link>
           </li>
-          {section && (
-            <>
-              <li aria-hidden="true">/</li>
-              <li>
-                <Link href={`/#section-${section.id}`} className="hover:text-foreground">{section.title}</Link>
-              </li>
-            </>
-          )}
+          <>
+            <li aria-hidden="true">/</li>
+            <li>
+              <Link href={`/#section-${section.id}`} className="hover:text-foreground">{section.title}</Link>
+            </li>
+          </>
           <li aria-hidden="true">/</li>
           <li aria-current="page" className="text-foreground">
             {category.title}
@@ -73,11 +69,9 @@ export default async function CategoryPage({ params }: Props) {
       </nav>
 
       <header className="clay glaze mb-6 flex items-center gap-4 p-5 [--clay-r:2rem] sm:p-6">
-        {section && (
-          <span className="clay-sm grid size-14 shrink-0 place-items-center [--clay:var(--card)] [--clay-r:1.25rem]">
-            <SectionIcon name={section.icon} className="size-6" />
-          </span>
-        )}
+        <span className="clay-sm grid size-14 shrink-0 place-items-center [--clay:var(--card)] [--clay-r:1.25rem]">
+          <SectionIcon name={section.icon} className="size-6" />
+        </span>
         <div>
           <h1 className="font-zekr text-3xl leading-tight font-bold sm:text-4xl">{category.title}</h1>
           <p className="mt-1 text-sm font-medium opacity-80">{athkarCount(category.items.length)}</p>
