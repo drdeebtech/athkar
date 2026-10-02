@@ -209,6 +209,17 @@
   .seg-quran::before { content: "﴿"; }
   .seg-quran::after { content: "﴾"; }
   .seg-hadith { color: var(--hadith); }
+  /* Hadith also gets the source's (( )) so it is not marked by colour alone. The
+     empty alternative text keeps screen readers quiet; the first declaration is
+     for browsers without alternative text. */
+  .seg-hadith::before {
+    content: "((";
+    content: "((" / "";
+  }
+  .seg-hadith::after {
+    content: "))";
+    content: "))" / "";
+  }
 
   /* Staggered entrance, capped so long lists never wait. */
   .rise {

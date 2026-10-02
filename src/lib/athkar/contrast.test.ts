@@ -82,6 +82,20 @@ function sources(dir: string): string[] {
   });
 }
 
+describe("hadith is not marked by colour alone (WCAG 1.4.1)", () => {
+  // Hadith against plain text is about 2:1 in light and 1.35:1 in dark, so colour
+  // alone does not set it apart. The brackets have empty alternative text, so
+  // screen readers do not read them, and copied or shared text is unchanged.
+  it.each([
+    ["before", "(("],
+    ["after", "))"],
+  ])("draws %s each hadith span %s, hidden from screen readers", (side, marks) => {
+    const rule = new RegExp(`\\.seg-hadith::${side}\\s*\\{([^}]*)\\}`).exec(CSS)?.[1] ?? "";
+    expect(rule).toContain(`content: "${marks}";`);
+    expect(rule).toContain(`content: "${marks}" / "";`);
+  });
+});
+
 describe("no faded focus rings or placeholder text", () => {
   it("never lowers the opacity of the ring or placeholder colours", () => {
     const offending = sources(join(ROOT, "src")).flatMap((file) =>
