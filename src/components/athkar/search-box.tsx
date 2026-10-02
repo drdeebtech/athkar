@@ -4,17 +4,12 @@ import { Loader2, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react";
 import { athkarCount, resultsCount } from "@/lib/athkar/arabic";
-import { createSearchIndex, searchIndex, type SearchIndex } from "@/lib/athkar/search";
+import { parseSearchIndex, searchIndex, type SearchIndex } from "@/lib/athkar/search";
 import { leftContainer } from "@/lib/athkar/focus";
-import type { Category } from "@/lib/athkar/types";
 
 type IndexState = { status: "idle" | "loading" | "error" } | { status: "ready"; index: SearchIndex };
 
 const MAX_RESULTS = 12;
-
-const isCategoryList = (data: unknown): data is Category[] =>
-  Array.isArray(data) &&
-  data.every((c) => typeof c?.id === "number" && typeof c?.title === "string" && Array.isArray(c?.items));
 
 export function SearchBox() {
   const [query, setQuery] = useState("");
@@ -32,8 +27,7 @@ export function SearchBox() {
       const res = await fetch("/search-index.json");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: unknown = await res.json();
-      if (!isCategoryList(data)) throw new Error("Unexpected search index shape");
-      setState({ status: "ready", index: createSearchIndex(data) });
+      setState({ status: "ready", index: parseSearchIndex(data) });
     } catch {
       setState({ status: "error" });
     }
