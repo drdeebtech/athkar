@@ -1,6 +1,6 @@
 import localFont from "next/font/local";
 
-// The reading face ("Athkar Naskh", our renamed subset of Scheherazade New; see
+// The reading face ("Athkar Naskh", our renamed subset of Noto Naskh Arabic; see
 // src/app/layout.tsx) sets the title and the adhkar, and nothing outside situation
 // pages uses it. Declaring it in this layout makes Next preload it on these pages,
 // where the title is on the first screen, and keeps it out of every other page's

@@ -18,7 +18,7 @@ search and reading settings. Content source: `data/sources/azkar-db.json`.
 ## Tech Stack
 - **Framework:** Next.js 16 (App Router, React 19, TypeScript strict), static export (`output: "export"`)
 - **UI:** Tailwind CSS v4 with OKLCH tokens, shadcn/ui primitives, Lucide icons
-- **Fonts:** Athkar Sans Arabic (UI, renamed IBM Plex Sans Arabic subset), Baloo Bhaijaan 2 (display), Athkar Naskh (adhkar text and situation title, renamed Scheherazade New subset)
+- **Fonts:** Athkar Sans Arabic (UI, renamed IBM Plex Sans Arabic subset), Baloo Bhaijaan 2 (display), Athkar Naskh (adhkar text and situation title, renamed Noto Naskh Arabic subset)
 - **Deployment:** Cloudflare Workers static assets (`wrangler.jsonc`), domain athkar.site
 - **Tests:** Vitest
 

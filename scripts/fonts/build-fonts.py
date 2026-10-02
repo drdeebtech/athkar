@@ -9,7 +9,7 @@ Requires: Python 3.11+ and the exact versions in scripts/fonts/requirements.txt
 
 Sources: https://github.com/google/fonts at commit 9710da1eacb3be272583c3224dcb70f9da6eadbb
   ofl/baloobhaijaan2/BalooBhaijaan2[wght].ttf
-  ofl/scheherazadenew/ScheherazadeNew-{Regular,Bold}.ttf
+  ofl/notonaskharabic/NotoNaskhArabic[wght].ttf (instanced at wght 400 and 700)
   ofl/ibmplexsansarabic/IBMPlexSansArabic-{Regular,Medium,Bold}.ttf
 The build checks each source against INPUT_SHA256 before it writes anything, so
 a different upstream revision (with, say, another copyright year or Reserved
@@ -21,14 +21,16 @@ then writes src/fonts/cmap.json: the SHA-256 of each shipped file and the code
 points it maps. src/lib/athkar/font-coverage.test.ts checks every character the
 site renders against those code points, and the files against those hashes.
 
-IBM Plex Sans Arabic is licensed with Reserved Font Name "Plex", and Scheherazade
-New with Reserved Font Names "Scheherazade" and "SIL". A subset is a Modified
-Version under the OFL, so their user-facing names (name IDs 1, 3, 4, 6, 16, 18,
-21) are renamed to "Athkar Sans Arabic" and "Athkar Naskh". A unique ID (name ID
-3) that still carries a reserved name after that, such as "SIL Global:
-Scheherazade New Regular 2026", is rewritten as "<version>;<PostScript name>".
-Copyright, trademark, manufacturer and license records are kept unchanged. The
-build fails if a reserved name remains in a user-facing name.
+Noto Naskh Arabic ships as one variable font; the build instances it at wght 400
+and 700, so the reading face stays two static files (the site uses only those
+weights), and drops the instances' variations PostScript prefix (name ID 25).
+IBM Plex Sans Arabic is licensed with Reserved Font Name "Plex", and "Noto" is a
+Google trademark. A subset is a Modified Version under the OFL, so the user-facing
+names (name IDs 1, 3, 4, 6, 16, 18, 21, 25) are renamed to "Athkar Sans Arabic"
+and "Athkar Naskh". A unique ID (name ID 3) that still carries a protected name
+after that is rewritten as "<version>;<PostScript name>". Copyright, trademark,
+manufacturer and license records are kept unchanged. The build fails if a
+protected name remains in a user-facing name.
 """
 
 import hashlib
@@ -38,38 +40,41 @@ from pathlib import Path
 
 from fontTools import subset
 from fontTools.ttLib import TTFont
+from fontTools.varLib import instancer
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "src" / "fonts"
-FONTS = {
-    "BalooBhaijaan2[wght].ttf": "BalooBhaijaan2-Variable.woff2",
-    "ScheherazadeNew-Regular.ttf": "AthkarNaskh-Regular.woff2",
-    "ScheherazadeNew-Bold.ttf": "AthkarNaskh-Bold.woff2",
-    "IBMPlexSansArabic-Regular.ttf": "AthkarSansArabic-Regular.woff2",
-    "IBMPlexSansArabic-Medium.ttf": "AthkarSansArabic-Medium.woff2",
-    "IBMPlexSansArabic-Bold.ttf": "AthkarSansArabic-Bold.woff2",
-}
+# (source, shipped file, wght to instance a variable source at, or None to ship it as is)
+FONTS = [
+    ("BalooBhaijaan2[wght].ttf", "BalooBhaijaan2-Variable.woff2", None),
+    ("NotoNaskhArabic[wght].ttf", "AthkarNaskh-Regular.woff2", 400),
+    ("NotoNaskhArabic[wght].ttf", "AthkarNaskh-Bold.woff2", 700),
+    ("IBMPlexSansArabic-Regular.ttf", "AthkarSansArabic-Regular.woff2", None),
+    ("IBMPlexSansArabic-Medium.ttf", "AthkarSansArabic-Medium.woff2", None),
+    ("IBMPlexSansArabic-Bold.ttf", "AthkarSansArabic-Bold.woff2", None),
+]
 # SHA-256 of each source at the pinned google/fonts commit.
 INPUT_SHA256 = {
     "BalooBhaijaan2[wght].ttf": "3e9f07fbc796c0ddcb3e6e0aa26f9c86741d9f5b7f5cb72f4ed3c06e55a19336",
-    "ScheherazadeNew-Regular.ttf": "794bac8dc9e83d1d620bc471ea694f5f31d0965ce8006490a79dfc51a2d283b3",
-    "ScheherazadeNew-Bold.ttf": "91363517a63dbc7448b5814226d33d845b26b32a461cd159ea0b3f23c7effd2d",
+    "NotoNaskhArabic[wght].ttf": "67b5a525a661b607971fbd3f96a81b89d3a768e74534fca84f18ac97e6fab72f",
     "IBMPlexSansArabic-Regular.ttf": "6f611412270a132bbac838da9259d4c68569b4175f3b3b8fa3fa36a30b56dab9",
     "IBMPlexSansArabic-Medium.ttf": "b8363ab9f733dfa4f8e96b8b2102c24b5cf4110fb96d1d3d9a9412f6fb49cf74",
     "IBMPlexSansArabic-Bold.ttf": "691e0c891a38637ae6bbdb69700f8042cb0724a137bee615068ffdb92244f61f",
 }
 
-# OFL Reserved Font Names (by source file prefix) that must not appear in Modified Versions' names.
-RESERVED = {"IBMPlexSansArabic": ["Plex"], "ScheherazadeNew": ["Scheherazade", "SIL"]}
+# Names (by source file prefix) that must not appear in our Modified Versions' names:
+# OFL Reserved Font Names, and the Noto trademark.
+RESERVED = {"IBMPlexSansArabic": ["Plex"], "NotoNaskhArabic": ["Noto"]}
 RENAMES = [
     ("IBM Plex Sans Arabic", "Athkar Sans Arabic"),
     ("IBMPlexSansArabic", "AthkarSansArabic"),
-    ("Scheherazade New", "Athkar Naskh"),
-    ("ScheherazadeNew", "AthkarNaskh"),
+    ("Noto Naskh Arabic", "Athkar Naskh"),
+    ("NotoNaskhArabic", "AthkarNaskh"),
 ]
-NAME_IDS = {1, 3, 4, 6, 16, 18, 21}
+NAME_IDS = {1, 3, 4, 6, 16, 18, 21, 25}
 UNIQUE_ID = 3
 POSTSCRIPT_NAME = 6
+VARIATIONS_PREFIX = 25
 
 CMAP_COMMENT = (
     "Generated by scripts/fonts/build-fonts.py; do not edit. For each shipped font: its SHA-256 "
@@ -166,9 +171,13 @@ def main() -> None:
     options.notdef_outline = True
     options.glyph_names = False
     shipped: dict[str, dict[str, object]] = {}
-    for ttf, woff2 in FONTS.items():
+    for ttf, woff2, wght in FONTS:
         # Keep upstream head.modified so a rebuild of the same sources gives the same bytes.
         font = TTFont(src / ttf, recalcTimestamp=False)
+        if wght is not None:
+            font = instancer.instantiateVariableFont(font, {"wght": wght}, updateFontNames=True)
+            # A static instance has no variations, so its variations PostScript prefix goes too.
+            font["name"].removeNames(nameID=VARIATIONS_PREFIX)
         keep = family_codepoints(woff2.split("-")[0])
         subsetter = subset.Subsetter(options)
         subsetter.populate(unicodes=sorted(keep & set(font.getBestCmap())))

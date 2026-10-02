@@ -40,44 +40,45 @@
 
 /* ── Reading face fallbacks ───────────────────────────────────────────── */
 /* Drawn until Athkar Naskh arrives: Times New Roman on iPhone, Mac and Windows,
-   Noto Naskh Arabic on Android. Each is scaled to Athkar Naskh's width, so the
-   adhkar keep their line breaks, and given its ascent and descent, so the lines
-   do not move when it swaps in. Measured values and their source:
+   Noto Naskh Arabic on Android (the font Athkar Naskh is built from, so it
+   needs no scaling). Times is scaled to Athkar Naskh's width, so the adhkar keep
+   their line breaks, and each gets its ascent and descent, so the lines do not
+   move when it swaps in. Measured values and their source:
    src/lib/athkar/font-fallback.test.ts. */
 @font-face {
   font-family: "Athkar Naskh Fallback Times";
   font-weight: 400;
   src: local("Times New Roman"), local("TimesNewRomanPSMT");
-  size-adjust: 113%;
-  ascent-override: 118.83%;
-  descent-override: 61.66%;
+  size-adjust: 109.4%;
+  ascent-override: 97.71%;
+  descent-override: 57.95%;
   line-gap-override: 0%;
 }
 @font-face {
   font-family: "Athkar Naskh Fallback Times";
   font-weight: 700;
   src: local("Times New Roman Bold"), local("TimesNewRomanPS-BoldMT");
-  size-adjust: 115%;
-  ascent-override: 116.76%;
-  descent-override: 60.59%;
+  size-adjust: 111.9%;
+  ascent-override: 95.53%;
+  descent-override: 56.66%;
   line-gap-override: 0%;
 }
 @font-face {
   font-family: "Athkar Naskh Fallback Noto";
   font-weight: 400;
   src: local("Noto Naskh Arabic Regular"), local("NotoNaskhArabic-Regular"), local("Noto Naskh Arabic");
-  size-adjust: 104.3%;
-  ascent-override: 128.74%;
-  descent-override: 66.81%;
+  size-adjust: 100%;
+  ascent-override: 106.9%;
+  descent-override: 63.4%;
   line-gap-override: 0%;
 }
 @font-face {
   font-family: "Athkar Naskh Fallback Noto";
   font-weight: 700;
   src: local("Noto Naskh Arabic Bold"), local("NotoNaskhArabic-Bold");
-  size-adjust: 103.8%;
-  ascent-override: 129.36%;
-  descent-override: 67.13%;
+  size-adjust: 100%;
+  ascent-override: 106.9%;
+  descent-override: 63.4%;
   line-gap-override: 0%;
 }
 

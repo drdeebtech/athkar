@@ -13,8 +13,8 @@ import "./globals.css";
 // in src/fonts/unicode-ranges.json, and font-coverage.test.ts checks every character
 // the site renders against the code points each file maps (src/fonts/cmap.json).
 // "Athkar Sans Arabic" is our subset of IBM Plex Sans Arabic and "Athkar Naskh" our
-// subset of Scheherazade New, renamed because "Plex", "Scheherazade" and "SIL" are
-// OFL Reserved Font Names (see THIRD_PARTY_NOTICES.md). Athkar Naskh, the reading
+// subset of Noto Naskh Arabic, renamed because "Plex" is an OFL Reserved Font Name
+// and "Noto" a Google trademark (see THIRD_PARTY_NOTICES.md). Athkar Naskh, the reading
 // face, is declared in app/athkar/[id]/layout.tsx, the only route that uses it.
 
 const uiFont = localFont({

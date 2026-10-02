@@ -21,7 +21,10 @@ describe("font build reproducibility", () => {
 
   it("checks the SHA-256 of every upstream source it builds from", () => {
     const inputs = dictKeys("INPUT_SHA256");
-    expect(inputs).toEqual(dictKeys("FONTS"));
+    const fonts = /^FONTS = \[([\s\S]*?)^\]/m.exec(SCRIPT)?.[1] ?? "";
+    const sources = [...new Set([...fonts.matchAll(/^\s*\("([^"]+)",/gm)].map((m) => m[1]))];
+    expect(sources).not.toEqual([]);
+    expect(inputs).toEqual(sources);
     const body = /^INPUT_SHA256 = \{([\s\S]*?)^\}/m.exec(SCRIPT)?.[1] ?? "";
     expect([...body.matchAll(/"([0-9a-f]{64})"/g)]).toHaveLength(inputs.length);
   });

@@ -43,11 +43,12 @@ to the ranges in `src/fonts/unicode-ranges.json` (all OpenType layout features
 kept).
 
 - Baloo Bhaijaan 2 (`ofl/baloobhaijaan2`), Ek Type
-- Scheherazade New (`ofl/scheherazadenew`), copyright SIL Global, with Reserved
-  Font Names "Scheherazade" and "SIL". Our subset is a Modified Version, so it
-  is distributed as "Athkar Naskh" (`src/fonts/AthkarNaskh-*.woff2`, license
-  `src/fonts/OFL-ScheherazadeNew.txt`). SIL Global's copyright, trademark,
-  manufacturer and license records inside the files are unchanged.
+- Noto Naskh Arabic (`ofl/notonaskharabic`), copyright The Noto Project Authors.
+  The variable font is instanced at weights 400 and 700 and subset; "Noto" is a
+  Google trademark, so our Modified Version is distributed as "Athkar Naskh"
+  (`src/fonts/AthkarNaskh-*.woff2`, license `src/fonts/OFL-NotoNaskhArabic.txt`).
+  The copyright, trademark, manufacturer and license records inside the files
+  are unchanged.
 - IBM Plex Sans Arabic (`ofl/ibmplexsansarabic`), IBM Corp., with Reserved
   Font Name "Plex". Our subset is a Modified Version, so it is distributed as
   "Athkar Sans Arabic" (`src/fonts/AthkarSansArabic-*.woff2`). IBM's copyright,

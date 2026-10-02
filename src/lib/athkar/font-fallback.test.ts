@@ -33,74 +33,70 @@ function fontFaces(): FallbackFace[] {
 }
 
 /*
- * Athkar Naskh is much wider than the fonts a phone draws while it loads, so each
- * fallback is scaled with size-adjust to take the same width, and the text keeps
- * its line breaks when the face swaps in.
+ * Athkar Naskh (our subset of Noto Naskh Arabic) is wider than Times New Roman,
+ * the font iPhone, Mac and Windows draw while it loads, so that fallback is scaled
+ * with size-adjust to take the same width, and the text keeps its line breaks when
+ * the face swaps in. Android draws Noto Naskh Arabic itself, the font Athkar Naskh
+ * is built from, so that fallback is not scaled.
  *
- * size-adjust is width(Athkar Naskh) / width(fallback), both in em, shaped with
- * HarfBuzz (uharfbuzz 0.56.2, RTL, default features) over every zekr line as the
- * page shows it (with ﴿ ﴾ and (( )) drawn in) plus every situation title:
- * - 400: all zekr text in AthkarNaskh-Regular. 700: all zekr text and titles in
- *   AthkarNaskh-Bold (the title is always bold; the zekr is bold in bold mode).
- * - Times New Roman (iPhone, Mac, Windows): /System/Library/Fonts/Supplemental/
- *   Times New Roman.ttf and Times New Roman Bold.ttf on macOS 27. 400: 1.141 (pages
- *   1.07 to 1.26). 700: 1.161 (titles alone 1.132, bold zekr 1.164).
- * - Noto Naskh Arabic (Android's Arabic serif): NotoNaskhArabic[wght].ttf from
- *   google/fonts 9710da1, at wght 400 and 700. 400: 1.043. 700: 1.038.
- * Neither fallback is missing a glyph for this text.
+ * Times New Roman's size-adjust is width(Athkar Naskh) / width(Times New Roman),
+ * both in em, shaped with HarfBuzz (uharfbuzz 0.56.2, RTL, default features) over
+ * every zekr line in the dataset; the 700 value also counts every situation title
+ * (the title is always bold; the zekr is bold in bold mode). Sources: the shipped
+ * AthkarNaskh-*.woff2 and /System/Library/Fonts/Supplemental/Times New Roman.ttf
+ * and Times New Roman Bold.ttf on macOS 27. 400: 1.094. 700: 1.119 (titles alone
+ * 1.116). Neither fallback is missing a glyph for this text.
  *
- * Times New Roman then ships at 113% and 115%, a step under the HarfBuzz ratios,
- * because Chromium (Playwright, macOS) lines the text up better there. Over 480
- * zekr paragraphs at 360px, the paragraphs whose line count changes on the swap:
- * 112/114: 54, 113/115: 50, 114.1/116.1: 55 (the 1.75rem size), and 83 / 73 / 73 at
- * 2.4rem, with the fewest first-screen changes at 113/115 (21 and 29 pages). With
- * every font held 2.5s, CLS on /athkar/1 at 360px was 0.0018 at 113% against 0.13
- * at 114.1%. Noto Naskh Arabic is not installed on the Mac that measured, so it
- * keeps the HarfBuzz ratio.
+ * Chromium (Playwright, macOS) agrees: over the zekr paragraphs of 45 situation
+ * pages in four settings (360px at 1.75rem, 2.4rem and bold, 390px at 1.25rem), the
+ * paragraphs whose line count changes on the swap number 78 / 64 / 57 / 55 / 66 for
+ * 106.4 / 107.4 / 108.4 / 109.4 / 110.4% (700 two points higher), the fewest at the
+ * HarfBuzz ratio. A page can still shift when one word sits on a line-break edge
+ * (with every font held 2.5s, /athkar/1 at 360px scores about 0.15 at all five).
  *
  * The line height is fixed (2.05 and 1.6), but a text run's box is its font's
  * ascent plus descent, so a fallback with other vertical metrics moves every line
- * of text by a few pixels when the face swaps in. Chromium counts that as layout
- * shift: without the overrides, /athkar/1 at 360px scored 0.16. The overrides give
- * each fallback Athkar Naskh's metrics (ascent 2750, descent 1427, line gap 0 per
- * 2048 units, the same in both weights and in hhea and OS/2 typo, which it marks
- * USE_TYPO_METRICS), divided by size-adjust because the browser scales them by it.
+ * of text by a few pixels when the face swaps in, which Chromium counts as layout
+ * shift. The overrides give each fallback Athkar Naskh's metrics (ascent 1069,
+ * descent 634, line gap 0 per 1000 units, the same in both weights and in hhea and
+ * OS/2 typo, which it marks USE_TYPO_METRICS), divided by size-adjust because the
+ * browser scales them by it.
  */
 const FALLBACKS: FallbackFace[] = [
   {
     family: '"Athkar Naskh Fallback Times"',
     weight: "400",
     src: 'local("Times New Roman"), local("TimesNewRomanPSMT")',
-    sizeAdjust: "113%",
-    ascent: "118.83%",
-    descent: "61.66%",
+    sizeAdjust: "109.4%",
+    ascent: "97.71%",
+    descent: "57.95%",
     lineGap: "0%",
   },
   {
     family: '"Athkar Naskh Fallback Times"',
     weight: "700",
     src: 'local("Times New Roman Bold"), local("TimesNewRomanPS-BoldMT")',
-    sizeAdjust: "115%",
-    ascent: "116.76%",
-    descent: "60.59%",
+    sizeAdjust: "111.9%",
+    ascent: "95.53%",
+    descent: "56.66%",
     lineGap: "0%",
   },
   {
     family: '"Athkar Naskh Fallback Noto"',
     weight: "400",
     src: 'local("Noto Naskh Arabic Regular"), local("NotoNaskhArabic-Regular"), local("Noto Naskh Arabic")',
-    sizeAdjust: "104.3%",
-    ascent: "128.74%",
-    descent: "66.81%",
+    sizeAdjust: "100%",
+    ascent: "106.9%",
+    descent: "63.4%",
     lineGap: "0%",
   },
   {
     family: '"Athkar Naskh Fallback Noto"',
     weight: "700",
     src: 'local("Noto Naskh Arabic Bold"), local("NotoNaskhArabic-Bold")',
-    sizeAdjust: "103.8%",
-    ascent: "129.36%",
-    descent: "67.13%",
+    sizeAdjust: "100%",
+    ascent: "106.9%",
+    descent: "63.4%",
     lineGap: "0%",
   },
 ];

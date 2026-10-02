@@ -165,7 +165,7 @@ describe("self-hosted font coverage", () => {
     const files = readdirSync(FONTS_DIR);
     // woff2 file prefix -> license of the upstream family it was built from
     const licenses: Record<string, string> = {
-      AthkarNaskh: "OFL-ScheherazadeNew.txt",
+      AthkarNaskh: "OFL-NotoNaskhArabic.txt",
       BalooBhaijaan2: "OFL-BalooBhaijaan2.txt",
       AthkarSansArabic: "OFL-IBMPlexSansArabic.txt",
     };
@@ -174,8 +174,8 @@ describe("self-hosted font coverage", () => {
     for (const license of Object.values(licenses)) expect(files).toContain(license);
   });
 
-  it("never ships a font whose file name uses a Reserved Font Name (Plex, Scheherazade)", () => {
+  it("never ships a font whose file name uses a protected name (the Plex Reserved Font Name, the Noto trademark)", () => {
     const files = readdirSync(FONTS_DIR).filter((f) => f.endsWith(".woff2"));
-    expect(files.filter((f) => /plex|scheherazade/i.test(f))).toEqual([]);
+    expect(files.filter((f) => /plex|noto/i.test(f))).toEqual([]);
   });
 });
