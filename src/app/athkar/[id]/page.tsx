@@ -84,17 +84,18 @@ export default async function CategoryPage({ params }: Props) {
         next={next ? { id: next.id, title: next.title } : undefined}
       />
 
-      <nav aria-label="التنقل بين المواقف" className="mt-10 grid grid-cols-2 gap-4">
+      <nav aria-label="التنقل بين المواقف" className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         {prev ? (
           <Link href={`/athkar/${prev.id}`} className="clay clay-press flex items-center gap-2 p-4 [--clay-r:1.5rem]">
             <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span>
-              <span className="block text-xs text-muted-foreground">السابق</span>
-              <span className="font-zekr font-bold">{prev.title}</span>
+              <span className="block text-sm text-muted-foreground">السابق</span>
+              <span className="font-sans leading-[1.45] font-bold">{prev.title}</span>
             </span>
           </Link>
         ) : (
-          <span />
+          // Keeps "next" in the second column from sm up; one column on phones needs no spacer.
+          <span className="hidden sm:block" />
         )}
         {next && (
           <Link
@@ -102,8 +103,8 @@ export default async function CategoryPage({ params }: Props) {
             className="clay clay-press flex items-center justify-end gap-2 p-4 text-left [--clay-r:1.5rem]"
           >
             <span>
-              <span className="block text-xs text-muted-foreground">التالي</span>
-              <span className="font-zekr font-bold">{next.title}</span>
+              <span className="block text-sm text-muted-foreground">التالي</span>
+              <span className="font-sans leading-[1.45] font-bold">{next.title}</span>
             </span>
             <ChevronLeft className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           </Link>
@@ -120,7 +121,7 @@ export default async function CategoryPage({ params }: Props) {
               <li key={c.id}>
                 <Link
                   href={`/athkar/${c.id}`}
-                  className="clay-sm clay-press glaze inline-block px-4 py-2 font-zekr text-base font-bold focus-visible:ring-3 focus-visible:ring-ring"
+                  className="clay-sm clay-press glaze inline-block px-4 py-2 font-sans text-base font-bold focus-visible:ring-3 focus-visible:ring-ring"
                 >
                   {c.title}
                 </Link>

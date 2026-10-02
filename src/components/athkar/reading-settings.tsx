@@ -169,7 +169,7 @@ export function ReadingSettingsButton() {
               >
                 <Plus className="size-4" aria-hidden="true" />
               </button>
-              <span className="font-zekr text-lg" aria-live="polite">
+              <span className="font-sans text-lg font-bold tabular-nums" aria-live="polite">
                 {settings.fontStep + 1} / {FONT_STEPS.length}
               </span>
               <button
@@ -197,7 +197,7 @@ export function ReadingSettingsButton() {
                   aria-pressed={settings.theme === value}
                   onClick={() => update({ theme: value })}
                   className={cn(
-                    "flex flex-col items-center gap-1 rounded-md py-2 text-xs",
+                    "flex flex-col items-center gap-1 rounded-md py-2 text-sm",
                     settings.theme === value ? "clay-sm font-bold [--clay-r:1rem]" : "rounded-2xl hover:bg-card/50",
                   )}
                 >

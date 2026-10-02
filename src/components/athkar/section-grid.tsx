@@ -28,8 +28,8 @@ export function SectionGrid({ sections }: { sections: readonly SectionWithCatego
                   href={`/athkar/${cat.id}`}
                   className="clay clay-press glaze flex h-full min-h-24 flex-col justify-between gap-3 p-4 [--clay-r:1.5rem] focus-visible:ring-3 focus-visible:ring-ring"
                 >
-                  <span className="font-zekr text-lg leading-snug font-bold">{cat.title}</span>
-                  <span className="self-start rounded-full bg-[color-mix(in_oklch,currentColor_10%,transparent)] px-2.5 py-0.5 text-xs font-medium">
+                  <span className="font-sans text-base leading-[1.45] font-bold">{cat.title}</span>
+                  <span className="self-start rounded-full bg-[color-mix(in_oklch,currentColor_10%,transparent)] px-2.5 py-0.5 text-sm font-medium">
                     {athkarCount(cat.items.length)}
                   </span>
                 </Link>

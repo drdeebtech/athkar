@@ -47,7 +47,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
         <span className="font-display">
           الذكر <span className="text-base font-bold text-foreground">{index + 1}</span> من {total}
         </span>
-        <span className="clay-sm glaze px-3 py-1 text-xs font-bold [--hue:60]">{timesCount(counter.target)}</span>
+        <span className="clay-sm glaze px-3 py-1 text-sm font-bold [--hue:60]">{timesCount(counter.target)}</span>
       </header>
 
       <div className="px-5 pt-3 pb-5 sm:px-7">
