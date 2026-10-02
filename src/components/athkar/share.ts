@@ -1,9 +1,8 @@
 import { siteConfig } from "@/config/site";
-
-const plain = (text: string) => text.replace(/\(\(|\)\)/g, "").trim();
+import { shareableText } from "@/lib/athkar/text";
 
 export function formatForSharing(text: string, title: string): string {
-  return `${plain(text)}\n\n— ${title} | ${siteConfig.name}`;
+  return `${shareableText(text)}\n\n— ${title} | ${siteConfig.name}`;
 }
 
 export async function copyText(text: string): Promise<boolean> {
