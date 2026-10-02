@@ -45,7 +45,14 @@ function store(stored: string | null): void {
   if (stored !== null) localStorage.setItem(SETTINGS_KEY, stored);
 }
 
-function stubPrefersDark(prefersDark: boolean): void {
+/** Whether the system prefers a dark colour scheme; null for a browser without matchMedia. */
+type PrefersDark = boolean | null;
+
+function stubPrefersDark(prefersDark: PrefersDark): void {
+  if (prefersDark === null) {
+    vi.stubGlobal("matchMedia", undefined);
+    return;
+  }
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(prefers-color-scheme: dark)" && prefersDark,
     media: query,
@@ -55,7 +62,7 @@ function stubPrefersDark(prefersDark: boolean): void {
 }
 
 /** Runs the inline script string exactly as it ships in the page head. */
-function runPrePaint(stored: string | null, prefersDark: boolean): RootState {
+function runPrePaint(stored: string | null, prefersDark: PrefersDark): RootState {
   resetRoot();
   store(stored);
   stubPrefersDark(prefersDark);
@@ -64,7 +71,7 @@ function runPrePaint(stored: string | null, prefersDark: boolean): RootState {
 }
 
 /** Runs the runtime path: a storage event makes the store re-read, parse and apply the stored value. */
-function runRuntime(stored: string | null, prefersDark: boolean): RootState {
+function runRuntime(stored: string | null, prefersDark: PrefersDark): RootState {
   const { unmount } = render(
     <ReadingSettingsProvider>
       <span />
@@ -185,6 +192,15 @@ describe("pre-paint script with storage blocked", () => {
   });
 });
 
+describe("pre-paint script without matchMedia", () => {
+  it("still applies bold and size for the system theme, which resolves as light", () => {
+    const state = runPrePaint(json({ theme: "system", bold: true, fontStep: 4 }), null);
+    expect(state.className).toBe("");
+    expect(state.attributes["data-bold"]).toBe("on");
+    expect(state.zekrSize).toBe("2.4rem");
+  });
+});
+
 describe("applySettingsToRoot", () => {
   it.each(MATRIX)("validates $label like parseSettings (prefers dark: $prefersDark)", ({ stored, prefersDark }) => {
     expect(runDirect(applySettingsToRoot, stored, prefersDark)).toEqual(runRuntime(stored, prefersDark));
@@ -223,6 +239,12 @@ const UNREADABLE = [
   ["invalid JSON", "{"],
 ] as const;
 
+// Explicit themes only: under the system theme the provider's colour-scheme listener calls matchMedia itself.
+const WITHOUT_MATCH_MEDIA = [
+  ["a dark theme", json({ theme: "dark", bold: true, fontStep: 4 }), "dark"],
+  ["a light theme", json({ theme: "light", bold: true, fontStep: 4 }), ""],
+] as const;
+
 describe.each(PATHS)("%s", (_path, run) => {
   it.each(THEME_AND_BOLD)("applies theme and bold for $label (prefers dark: $prefersDark)", (c) => {
     const state = run(c.stored, c.prefersDark);
@@ -240,5 +262,12 @@ describe.each(PATHS)("%s", (_path, run) => {
     const state = run(stored, true);
     expect(state).toEqual(run(null, true));
     expect(state.className).toBe("dark");
+  });
+
+  it.each(WITHOUT_MATCH_MEDIA)("applies %s, bold and size without matchMedia", (_label, stored, className) => {
+    const state = run(stored, null);
+    expect(state.className).toBe(className);
+    expect(state.attributes["data-bold"]).toBe("on");
+    expect(state.zekrSize).toBe("2.4rem");
   });
 });

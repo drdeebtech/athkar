@@ -56,6 +56,7 @@ export interface RootSettingsConstants {
   readonly defaults: Pick<ReadingSettings, "fontStep" | "bold" | "theme">;
 }
 
+/** The constants both paths pass to applySettingsToRoot: as JSON in PRE_PAINT_SCRIPT, as is at runtime. */
 export const ROOT_SETTINGS_CONSTANTS: RootSettingsConstants = {
   fontSizes: FONT_STEPS,
   themes: THEMES,
@@ -97,12 +98,15 @@ export function applySettingsToRoot(
  * Inline script run before first paint, so there is no flash of the wrong theme
  * or font size. It applies the stored settings with applySettingsToRoot itself,
  * the function the runtime uses. Unreadable JSON counts as missing settings, as
- * in parseSettings; if storage cannot be read at all, nothing is applied.
+ * in parseSettings; if storage cannot be read at all, nothing is applied. In a
+ * browser without matchMedia the stored settings still apply, and the system
+ * theme resolves as light.
  */
 export const PRE_PAINT_SCRIPT =
   "(function(){try{" +
   `var stored=localStorage.getItem(${JSON.stringify(SETTINGS_KEY)});` +
   "var raw=null;try{raw=JSON.parse(stored);}catch(e){}" +
-  `(${applySettingsToRoot.toString()})(document.documentElement,raw,` +
-  `matchMedia(${JSON.stringify(PREFERS_DARK_QUERY)}).matches,${JSON.stringify(ROOT_SETTINGS_CONSTANTS)});` +
+  `var prefersDark=typeof matchMedia==="function"&&matchMedia(${JSON.stringify(PREFERS_DARK_QUERY)}).matches;` +
+  `(${applySettingsToRoot.toString()})(document.documentElement,raw,prefersDark,` +
+  `${JSON.stringify(ROOT_SETTINGS_CONSTANTS)});` +
   "}catch(e){}})();";

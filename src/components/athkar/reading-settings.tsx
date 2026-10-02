@@ -26,9 +26,11 @@ const SettingsContext = createContext<SettingsContextValue>({ settings: DEFAULT_
 
 export const useReadingSettings = () => useContext(SettingsContext);
 
-// The same function and constants as the pre-paint script, so first load and later changes agree.
+// The same function, constants and matchMedia check as the pre-paint script, so first load and later
+// changes agree, and a browser without matchMedia still gets the chosen settings.
 function applyToDocument(s: ReadingSettings) {
-  applySettingsToRoot(document.documentElement, s, matchMedia(PREFERS_DARK_QUERY).matches, ROOT_SETTINGS_CONSTANTS);
+  const prefersDark = typeof matchMedia === "function" && matchMedia(PREFERS_DARK_QUERY).matches;
+  applySettingsToRoot(document.documentElement, s, prefersDark, ROOT_SETTINGS_CONSTANTS);
 }
 
 function readStored(): ReadingSettings {

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SETTINGS_KEY } from "@/lib/athkar/settings";
+import { SETTINGS_KEY, parseSettings } from "@/lib/athkar/settings";
 import { click, render } from "@/test/dom";
 import { ReadingSettingsButton, ReadingSettingsProvider } from "./reading-settings";
 
@@ -127,5 +127,14 @@ describe("ReadingSettingsProvider applies settings to <html>", () => {
     click(themeButton(container, "نهاري"));
     colorScheme.setDark(true);
     expect(root().classList.contains("dark")).toBe(false);
+  });
+
+  it("saves and applies a chosen theme in a browser without matchMedia", () => {
+    const container = mountPanel();
+    vi.stubGlobal("matchMedia", undefined);
+    click(themeButton(container, "ليلي"));
+    expect(parseSettings(localStorage.getItem(SETTINGS_KEY)).theme).toBe("dark");
+    expect(themeButton(container, "ليلي").getAttribute("aria-pressed")).toBe("true");
+    expect(root().classList.contains("dark")).toBe(true);
   });
 });
