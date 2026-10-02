@@ -1,10 +1,20 @@
+import type { Metadata, ResolvingMetadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "@/components/athkar/ad-slot";
 import { BrandArt } from "@/components/athkar/brand-art";
+import { JsonLd } from "@/components/athkar/json-ld";
 import { SearchBox } from "@/components/athkar/search-box";
 import { SectionGrid } from "@/components/athkar/section-grid";
 import { siteConfig } from "@/config/site";
 import { getCategories, getSections, getTotalAthkar } from "@/lib/athkar/data";
+import { websiteJsonLd } from "@/lib/athkar/structured-data";
+
+// Canonical and og:url live here, not in the root layout, so the 404 page does
+// not inherit a canonical pointing at the home page.
+export async function generateMetadata(_: unknown, parent: ResolvingMetadata): Promise<Metadata> {
+  const inherited = await parent;
+  return { alternates: { canonical: "/" }, openGraph: { ...inherited.openGraph, url: "/" } };
+}
 
 const QUICK_LINKS = ["أذكار الصباح", "أذكار المساء", "أذكار النوم", "الأذكار بعد السلام من الصلاة"];
 
@@ -15,8 +25,9 @@ export default function HomePage() {
 
   return (
     <>
+      <JsonLd data={websiteJsonLd(siteConfig)} />
       <section className="px-3 pt-5">
-        <div className="clay relative mx-auto grid max-w-5xl items-center gap-2 overflow-hidden px-5 pt-8 pb-7 [--clay-r:2.25rem] sm:px-10 md:grid-cols-[1.15fr_1fr] md:py-12">
+        <div className="clay relative mx-auto grid max-w-5xl items-center gap-2 px-5 pt-8 pb-7 [--clay-r:2.25rem] sm:px-10 md:grid-cols-[1.15fr_1fr] md:py-12">
           <div className="relative z-10">
             <p className="rise font-display text-lg font-bold text-primary">بسم الله نبدأ</p>
             <h1 className="rise mt-1 text-[clamp(2.4rem,7vw,4rem)] leading-[1.05] font-extrabold text-balance [--i:1]">
@@ -25,7 +36,7 @@ export default function HomePage() {
             <p className="rise mt-4 max-w-md text-base text-muted-foreground [--i:2] sm:text-lg">
               {getTotalAthkar()} ذكرًا ودعاءً من حصن المسلم في {categories.length} موقفًا، مع عدّاد يساعدك على الإتمام.
             </p>
-            <div className="rise mt-6 max-w-xl [--i:3]">
+            <div className="rise relative z-30 mt-6 max-w-xl [--i:3]">
               <SearchBox />
             </div>
             <nav aria-label="الأكثر قراءة" className="rise mt-5 flex flex-wrap gap-2.5 [--i:4]">

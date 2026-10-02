@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import source from "../../../data/sources/azkar-db.json";
+import { displayTitle } from "./normalize";
 import { SECTIONS, sectionForTitle } from "./sections";
 
 describe("sections", () => {
@@ -25,7 +26,7 @@ describe("sections", () => {
   });
 
   it("maps every category in the vendored source explicitly", () => {
-    const titles = [...new Set((source as { category: string }[]).map((r) => r.category.trim()))];
+    const titles = [...new Set((source as { category: string }[]).map((r) => displayTitle(r.category)))];
     const unmapped = titles.filter((t) => sectionForTitle(t, { strict: true }) === null);
     expect(unmapped).toEqual([]);
   });

@@ -15,6 +15,8 @@ interface ZekrListProps {
 }
 
 const AD_EVERY = 5;
+/** Pages with this many adhkar or fewer show each virtue and source open. */
+const SHORT_PAGE = 3;
 const ADVANCE_DELAY_MS = 250;
 
 const initial = (items: readonly Zekr[]) => items.map((z) => createCounter(z.count));
@@ -96,6 +98,7 @@ export function ZekrList({ title, items, next }: ZekrListProps) {
           <Fragment key={zekr.id}>
             <li>
               <ZekrCard
+                expanded={items.length <= SHORT_PAGE}
                 zekr={zekr}
                 index={i}
                 total={items.length}

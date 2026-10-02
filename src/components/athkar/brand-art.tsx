@@ -1,8 +1,9 @@
 import { cn } from "@/lib/utils";
 
-const ART = {
-  rehal: { sizes: [560, 960], ratio: 1744 / 2336 },
-  beads: { sizes: [480, 800], ratio: 1744 / 2336 },
+export const ART = {
+  // height / width of the exported WebP files (brand-art.test.ts checks them)
+  rehal: { sizes: [560, 960], ratio: 904 / 960 },
+  beads: { sizes: [480, 800], ratio: 593 / 800 },
 } as const;
 
 /** Decorative clay illustrations, pre-sized WebP with a responsive srcset. */

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react";
 import { athkarCount, resultsCount } from "@/lib/athkar/arabic";
 import { createSearchIndex, searchIndex, type SearchIndex } from "@/lib/athkar/search";
+import { leftContainer } from "@/lib/athkar/focus";
 import type { Category } from "@/lib/athkar/types";
 
 type IndexState = { status: "idle" | "loading" | "error" } | { status: "ready"; index: SearchIndex };
@@ -23,6 +24,7 @@ export function SearchBox() {
   const inputId = useId();
   const listId = useId();
   const wrapper = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setState({ status: "loading" });
@@ -59,20 +61,22 @@ export function SearchBox() {
   const showPanel = open && hasQuery;
 
   return (
-    <div ref={wrapper} className="relative">
+    <div
+      ref={wrapper}
+      className="relative"
+      onBlur={(e) => leftContainer(e.currentTarget, e.relatedTarget) && setOpen(false)}
+    >
       <label htmlFor={inputId} className="sr-only">
         ابحث عن ذكر أو موقف
       </label>
-      <div className="clay-inset flex items-center gap-2 px-5 text-foreground [--clay-r:9999px] focus-within:ring-3 focus-within:ring-ring/40">
+      <div className="clay-inset flex items-center gap-2 px-5 text-foreground [--clay-r:9999px] focus-within:ring-3 focus-within:ring-ring">
         <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
         <input
           id={inputId}
+          ref={input}
+          enterKeyHint="search"
           type="search"
-          role="combobox"
-          aria-autocomplete="list"
           value={query}
-          aria-controls={listId}
-          aria-expanded={showPanel}
           onFocus={() => {
             setOpen(true);
             ensureIndex();
@@ -85,18 +89,25 @@ export function SearchBox() {
           onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
           placeholder="ابحث: السفر، المطر، الهم، الكرب..."
           autoComplete="off"
-          className="h-14 w-full bg-transparent text-lg outline-none placeholder:text-muted-foreground/80"
+          className="h-14 w-full bg-transparent text-lg outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
         />
         {state.status === "loading" && <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden="true" />}
         {query && (
-          <button type="button" onClick={() => setQuery("")} aria-label="مسح البحث" className="rounded-md p-1 hover:bg-muted">
+          <button type="button" onClick={() => {
+              setQuery("");
+              input.current?.focus();
+            }} aria-label="مسح البحث" className="rounded-md p-1 hover:bg-muted">
             <X className="size-4" aria-hidden="true" />
           </button>
         )}
       </div>
 
       <p className="sr-only" aria-live="polite">
-        {showPanel && state.status === "ready" ? resultsCount(results.length) : ""}
+        {showPanel && state.status === "error"
+          ? "تعذّر تحميل البحث."
+          : showPanel && state.status === "ready"
+            ? resultsCount(results.length)
+            : ""}
       </p>
 
       <div

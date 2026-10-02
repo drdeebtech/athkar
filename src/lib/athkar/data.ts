@@ -1,9 +1,11 @@
 import source from "../../../data/sources/azkar-db.json";
+import categoryIds from "./category-ids.json";
 import { normalizeSource, type SourceRow } from "./normalize";
 import { SECTIONS } from "./sections";
 import type { Category, SectionWithCategories } from "./types";
 
-const CATEGORIES: readonly Category[] = normalizeSource(source as SourceRow[]);
+// Published ids are frozen in category-ids.json so /athkar/{id} never points at other content.
+const CATEGORIES: readonly Category[] = normalizeSource(source as SourceRow[], categoryIds);
 const BY_ID: ReadonlyMap<number, Category> = new Map(CATEGORIES.map((c) => [c.id, c]));
 
 export function getCategories(): readonly Category[] {

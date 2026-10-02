@@ -42,7 +42,8 @@ export function parseSettings(raw: string | null): ReadingSettings {
 
 export function updateSettings(current: ReadingSettings, patch: Partial<ReadingSettings>): ReadingSettings {
   const next = { ...current, ...patch };
-  return { ...next, fontStep: Math.min(FONT_STEPS.length - 1, Math.max(0, Math.round(next.fontStep))) };
+  const step = Number.isFinite(next.fontStep) ? Math.round(next.fontStep) : current.fontStep;
+  return { ...next, fontStep: Math.min(FONT_STEPS.length - 1, Math.max(0, step)) };
 }
 
 /**

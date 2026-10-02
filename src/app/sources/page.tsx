@@ -1,11 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, ResolvingMetadata } from "next";
 import { BrandArt } from "@/components/athkar/brand-art";
 
-export const metadata: Metadata = {
-  title: "المصادر",
-  description: "مصادر الأذكار المعروضة في الموقع وطريقة تنظيمها.",
-  alternates: { canonical: "/sources" },
-};
+const description = "مصادر الأذكار المعروضة في الموقع وطريقة تنظيمها.";
+
+export async function generateMetadata(_: unknown, parent: ResolvingMetadata): Promise<Metadata> {
+  // Extend the inherited Open Graph so the share image stays, with this page's own text and URL.
+  const inherited = await parent;
+  return {
+    title: "المصادر",
+    description,
+    alternates: { canonical: "/sources" },
+    openGraph: { ...inherited.openGraph, title: "المصادر | أذكار", description, url: "/sources" },
+  };
+}
 
 export default function SourcesPage() {
   return (

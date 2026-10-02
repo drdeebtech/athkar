@@ -2,13 +2,15 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Metadata, ResolvingMetadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/athkar/json-ld";
 import { SectionIcon } from "@/components/athkar/section-icon";
 import { ZekrList } from "@/components/athkar/zekr-list";
 import { siteConfig } from "@/config/site";
 import { getCategories, getCategory, getNeighbours } from "@/lib/athkar/data";
 import { athkarCount } from "@/lib/athkar/arabic";
 import { SECTIONS } from "@/lib/athkar/sections";
-import { stripDiacritics } from "@/lib/athkar/text";
+import { breadcrumbJsonLd } from "@/lib/athkar/structured-data";
+import { describeCategory } from "@/lib/athkar/describe";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,8 +26,7 @@ export async function generateMetadata({ params }: Props, parent: ResolvingMetad
   // A page-level openGraph replaces the parent's, so extend the inherited one to
   // keep the site share image, type, site name and locale on every situation page.
   const inherited = await parent;
-  const first = stripDiacritics(category.items[0]?.text ?? "").replace(/\s+/g, " ").slice(0, 120);
-  const description = `${category.title}: ${category.items.length} من الأذكار والأدعية من حصن المسلم. ${first}…`;
+  const description = describeCategory(category);
   return {
     title: category.title,
     description,
@@ -46,17 +47,27 @@ export default async function CategoryPage({ params }: Props) {
 
   const section = SECTIONS.find((s) => s.id === category.sectionId);
   const { prev, next } = getNeighbours(category.id);
+  const siblings = getCategories().filter((c) => c.sectionId === category.sectionId && c.id !== category.id);
 
   return (
     <div className="mx-auto max-w-3xl px-4 pt-6 pb-4" style={{ "--hue": section?.hue ?? 165 } as React.CSSProperties}>
+      <JsonLd data={breadcrumbJsonLd(siteConfig, category)} />
       <nav aria-label="مسار التصفح" className="mb-4 px-2 text-sm text-muted-foreground">
         <ol className="flex flex-wrap items-center gap-1">
           <li>
             <Link href="/" className="hover:text-foreground">الرئيسية</Link>
           </li>
+          {section && (
+            <>
+              <li aria-hidden="true">/</li>
+              <li>
+                <Link href={`/#section-${section.id}`} className="hover:text-foreground">{section.title}</Link>
+              </li>
+            </>
+          )}
           <li aria-hidden="true">/</li>
-          <li>
-            <Link href={`/#section-${section?.id}`} className="hover:text-foreground">{section?.title}</Link>
+          <li aria-current="page" className="text-foreground">
+            {category.title}
           </li>
         </ol>
       </nav>
@@ -104,6 +115,26 @@ export default async function CategoryPage({ params }: Props) {
           </Link>
         )}
       </nav>
+
+      {siblings.length > 0 && (
+        <section aria-labelledby="same-section" className="mt-10">
+          <h2 id="same-section" className="mb-4 text-xl font-extrabold">
+            من نفس القسم
+          </h2>
+          <ul className="flex flex-wrap gap-2.5">
+            {siblings.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/athkar/${c.id}`}
+                  className="clay-sm clay-press glaze inline-block px-4 py-2 font-zekr text-base font-bold focus-visible:ring-3 focus-visible:ring-ring"
+                >
+                  {c.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

@@ -24,28 +24,66 @@ export interface TextSegment {
   readonly text: string;
 }
 
-const MARKERS = /﴿([^﴾]*)﴾|\(\(([\s\S]*?)\)\)/g;
+// A hadith span may not contain another "((", so when the source leaves an
+// opener unclosed the innermost span is the one that gets styled.
+const MARKERS = /﴿([^﴾]*)﴾|\(\(((?:(?!\(\()[\s\S])*?)\)\)/g;
+
+/**
+ * Removes "((" and "))" runs the source left unbalanced (a few rows open a hadith
+ * without closing it, or close one twice). A parenthesis is only dropped when it
+ * is unmatched AND part of a doubled run, so "(ينفث (ثلاثاً))" stays intact.
+ */
+function dropStrayMarkers(text: string): string {
+  const chars = [...text];
+  const drop = new Set<number>();
+  const open: number[] = [];
+  chars.forEach((ch, i) => {
+    if (ch === "(") open.push(i);
+    else if (ch === ")" && open.pop() === undefined && (chars[i - 1] === ")" || chars[i + 1] === ")")) drop.add(i);
+  });
+  for (const i of open) if (chars[i - 1] === "(" || chars[i + 1] === "(") drop.add(i);
+  return drop.size === 0 ? text : chars.filter((_, i) => !drop.has(i)).join("");
+}
 
 /** Splits zekr text into plain, Quran (﴿…﴾) and hadith ((…)) segments. */
 export function segmentText(text: string): TextSegment[] {
   const segments: TextSegment[] = [];
   let cursor = 0;
+  // Plain text keeps whitespace-only runs (the space between two marked spans);
+  // marked segments must contain something.
   const push = (kind: SegmentKind, value: string) => {
-    if (value.trim().length > 0) segments.push({ kind, text: value });
+    if (kind === "plain" ? value.length > 0 : value.trim().length > 0) segments.push({ kind, text: value });
   };
 
   for (const match of text.matchAll(MARKERS)) {
     const start = match.index ?? 0;
-    push("plain", text.slice(cursor, start));
+    push("plain", dropStrayMarkers(text.slice(cursor, start)));
     if (match[1] !== undefined) push("quran", match[1]);
     else push("hadith", match[2] ?? "");
     cursor = start + match[0].length;
   }
-  push("plain", text.slice(cursor));
+  push("plain", dropStrayMarkers(text.slice(cursor)));
   return segments;
+}
+
+/** The zekr as plain text for copying and sharing: Quran brackets kept, hadith markers removed. */
+export function shareableText(text: string): string {
+  return segmentText(text)
+    .map((s) => (s.kind === "quran" ? `﴿${s.text}﴾` : s.text))
+    .join("")
+    .trim();
 }
 
 /** Text for the "hide diacritics" reading mode: no marks, alef wasla as plain alef. */
 export function plainReading(text: string): string {
   return stripDiacritics(text).replace(/ٱ/g, "ا");
+}
+
+// Arabic Presentation Forms-B letters (contextual glyph forms such as ﺗ ﻬ ﻟ ﻤ ﺠ).
+// Deliberately excludes Forms-A, which holds the ornate Quran brackets ﴿ ﴾.
+const PRESENTATION_LETTERS = /[\uFE70-\uFEFC]/g;
+
+/** Replaces presentation-form letters with their base letters; leaves marks and brackets alone. */
+export function toBaseLetters(text: string): string {
+  return text.replace(PRESENTATION_LETTERS, (ch) => ch.normalize("NFKC"));
 }
