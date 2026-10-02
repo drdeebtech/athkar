@@ -23,3 +23,7 @@
 # Brand images are not content-hashed; cache a week (rename files when they change).
 /brand/*
   Cache-Control: public, max-age=604800
+
+# Arabic text: without an explicit charset browsers decode it as windows-1252.
+/llms.txt
+  Content-Type: text/plain; charset=utf-8

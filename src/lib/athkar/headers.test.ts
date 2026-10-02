@@ -50,3 +50,11 @@ describe("security headers", () => {
     expect(thirdParty).toEqual(["script-src https://static.cloudflareinsights.com"]);
   });
 });
+
+describe("text files with Arabic content", () => {
+  it("declares UTF-8 for /llms.txt so browsers do not show garbled Arabic", () => {
+    const block = HEADERS.split(/\n\s*\n/).find((b) => b.split("\n").some((l) => l.trim() === "/llms.txt"));
+    expect(block).toBeDefined();
+    expect(block).toMatch(/^\s+Content-Type:\s*text\/plain;\s*charset=utf-8\s*$/im);
+  });
+});
