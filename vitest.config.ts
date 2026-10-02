@@ -9,7 +9,7 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
     coverage: {
       provider: "v8",
-      include: ["src/lib/**/*.ts"],
+      include: ["src/lib/**/*.ts", "scripts/**/*.ts"],
       exclude: ["src/lib/**/*.test.ts"],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },

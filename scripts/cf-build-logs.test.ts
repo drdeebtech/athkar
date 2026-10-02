@@ -1,14 +1,10 @@
-import { describe, expect, it } from "vitest";
-import {
-  errorMessage,
-  formatLogLines,
-  parseArgs,
-  pickLatest,
-  resolveAccountId,
-  sanitizeTerminal,
-  stripJsonComments,
-  validateToken,
-} from "./cf-build-logs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { describe, expect, it, vi } from "vitest";
+import { hasMorePages, isEntrypoint, run, stripJsonComments, validateToken } from "./cf-build-logs";
 
 describe("stripJsonComments", () => {
   it("removes line and block comments but keeps // inside strings", () => {
@@ -23,46 +19,13 @@ describe("stripJsonComments", () => {
   });
 });
 
-describe("pickLatest", () => {
-  const builds = [
-    { build_uuid: "old", created_on: "2026-10-01T10:00:00Z", build_trigger_metadata: { branch: "main" } },
-    { build_uuid: "new", created_on: "2026-10-02T10:00:00Z", build_trigger_metadata: { branch: "feat/x" } },
-  ];
-
-  it("returns the newest build", () => {
-    expect(pickLatest(builds)?.build_uuid).toBe("new");
-  });
-
-  it("filters by branch", () => {
-    expect(pickLatest(builds, "main")?.build_uuid).toBe("old");
-    expect(pickLatest(builds, "nope")).toBeUndefined();
-  });
-});
-
-describe("formatLogLines", () => {
-  it("accepts [timestamp, text] pairs and plain strings", () => {
-    expect(formatLogLines([["t1", "a"], "b"])).toEqual(["a", "b"]);
-  });
-});
-
-describe("parseArgs", () => {
-  it("reads an optional build id and --branch", () => {
-    expect(parseArgs([])).toEqual({ buildId: undefined, branch: undefined });
-    const uuid = "3aed095a-6ff4-4745-b99d-fa2872ddf446";
-    expect(parseArgs([uuid])).toEqual({ buildId: uuid, branch: undefined });
-    expect(parseArgs(["--branch", "main"])).toEqual({ buildId: undefined, branch: "main" });
-  });
-});
-
 describe("hasMorePages", () => {
-  it("continues while the current page is below total_pages", async () => {
-    const { hasMorePages } = await import("./cf-build-logs");
+  it("continues while the current page is below total_pages", () => {
     expect(hasMorePages({ page: 1, total_pages: 3 }, 25, 25)).toBe(true);
     expect(hasMorePages({ page: 3, total_pages: 3 }, 25, 25)).toBe(false);
   });
 
-  it("falls back to page fullness when total_pages is missing", async () => {
-    const { hasMorePages } = await import("./cf-build-logs");
+  it("falls back to page fullness when total_pages is missing", () => {
     expect(hasMorePages(undefined, 25, 25)).toBe(true);
     expect(hasMorePages(undefined, 7, 25)).toBe(false);
     expect(hasMorePages({ page: 1 }, 0, 25)).toBe(false);
@@ -70,23 +33,14 @@ describe("hasMorePages", () => {
 });
 
 describe("isEntrypoint", () => {
-  it("matches paths with spaces and Arabic letters", async () => {
-    const { isEntrypoint } = await import("./cf-build-logs");
-    const { pathToFileURL } = await import("node:url");
+  it("matches paths with spaces and Arabic letters", () => {
     const path = "/tmp/مشروع أذكار/scripts/cf-build-logs.ts";
     expect(isEntrypoint(pathToFileURL(path).href, path)).toBe(true);
     expect(isEntrypoint(pathToFileURL(path).href, "/tmp/other.ts")).toBe(false);
     expect(isEntrypoint(pathToFileURL(path).href, undefined)).toBe(false);
   });
-});
 
-describe("isEntrypoint with symlinks", () => {
-  it("matches when argv[1] is a symlink to the module", async () => {
-    const { isEntrypoint } = await import("./cf-build-logs");
-    const { mkdtempSync, writeFileSync, symlinkSync, rmSync } = await import("node:fs");
-    const { tmpdir } = await import("node:os");
-    const { join } = await import("node:path");
-    const { pathToFileURL } = await import("node:url");
+  it("matches when argv[1] is a symlink to the module", () => {
     const dir = mkdtempSync(join(tmpdir(), "athkar-entry-"));
     const real = join(dir, "real.ts");
     const link = join(dir, "link.ts");
@@ -97,37 +51,6 @@ describe("isEntrypoint with symlinks", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
-});
-
-describe("parseApiBody", () => {
-  it("parses JSON bodies", async () => {
-    const { parseApiBody } = await import("./cf-build-logs");
-    expect(parseApiBody('{"success":true,"result":[1]}')).toEqual({ success: true, result: [1] });
-  });
-
-  it("returns an unsuccessful body for HTML or empty responses", async () => {
-    const { parseApiBody } = await import("./cf-build-logs");
-    expect(parseApiBody("<html>502 Bad Gateway</html>")).toEqual({ success: false });
-    expect(parseApiBody("")).toEqual({ success: false });
-  });
-});
-
-describe("parseArgs validation", () => {
-  const uuid = "3aed095a-6ff4-4745-b99d-fa2872ddf446";
-
-  it("accepts a UUID build id and a branch", () => {
-    expect(parseArgs([uuid])).toEqual({ buildId: uuid, branch: undefined });
-    expect(parseArgs(["--branch", "main"])).toEqual({ buildId: undefined, branch: "main" });
-  });
-
-  it("rejects --branch without a value", () => {
-    expect(() => parseArgs(["--branch"])).toThrow(/--branch needs a value/);
-    expect(() => parseArgs(["--branch", "--other"])).toThrow(/--branch needs a value/);
-  });
-
-  it("rejects build ids that are not UUIDs (no path segments reach the URL)", () => {
-    expect(() => parseArgs(["../../user/tokens/verify"])).toThrow(/not a build UUID/);
   });
 });
 
@@ -149,32 +72,669 @@ describe("validateToken", () => {
   });
 });
 
-describe("resolveAccountId", () => {
-  const id = "fc8c8db485888cc39d246ac7d81f9f5f";
+// The whole run, end to end, against a fake Cloudflare API.
 
-  it("prefers a non-empty env var and falls back to config when it is empty", () => {
-    expect(resolveAccountId("0123456789abcdef0123456789abcdef", id)).toBe("0123456789abcdef0123456789abcdef");
-    expect(resolveAccountId("", id)).toBe(id);
-    expect(resolveAccountId(undefined, id)).toBe(id);
+const ACCOUNT = "fc8c8db485888cc39d246ac7d81f9f5f";
+const OTHER_ACCOUNT = "0123456789abcdef0123456789abcdef";
+const WORKER_TAG = "5f3c0d9e2b1a";
+// Stand-in credential: the run must send it to the API but never print it.
+const FAKE_CREDENTIAL = "fixture-credential-0001";
+const NEWEST = "9c1f5e2a-7b3d-4e8f-a1b2-c3d4e5f6a7b8";
+const OLDER = "3aed095a-6ff4-4745-b99d-fa2872ddf446";
+const MAIN_LATEST = "5b6c7d8e-9f01-4234-8567-89abcdef0123";
+const RULE = "-".repeat(60);
+// Shaped like wrangler.jsonc: comments, and "//" inside a string, must survive parsing.
+const CONFIG = `{
+  "$schema": "https://example.com/config-schema.json",
+  "name": "athkar",
+  // Not a secret: pins deploys and the build-log script to this account.
+  "account_id": "${ACCOUNT}",
+  /* everything else is ignored */ "workers_dev": false
+}`;
+
+interface BuildFixture {
+  readonly build_uuid: string;
+  readonly created_on?: string;
+  readonly created_at?: string;
+  readonly status?: string;
+  readonly build_outcome?: string;
+  readonly branch?: string;
+  readonly build_trigger_metadata?: {
+    readonly branch?: string;
+    readonly commit_hash?: string;
+    readonly commit_message?: string;
+  };
+}
+
+interface BuildsPage {
+  readonly builds: readonly BuildFixture[];
+  readonly totalPages: number;
+}
+
+interface LogsPage {
+  // Not typed as an array: some tests send the malformed shapes a broken API could.
+  readonly lines?: unknown;
+  readonly cursor?: string;
+  readonly truncated?: boolean;
+}
+
+interface CloudflareFixture {
+  readonly scripts?: readonly { readonly id: string; readonly tag: string }[];
+  readonly builds?: (page: number) => BuildsPage;
+  readonly logs?: (cursor: string | null) => LogsPage;
+}
+
+interface FakeCall {
+  readonly url: URL;
+  readonly init?: RequestInit;
+}
+
+interface FakeApi {
+  readonly fetch: (url: string, init?: RequestInit) => Promise<Response>;
+  readonly calls: readonly FakeCall[];
+}
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+}
+
+function ok(result: unknown, resultInfo?: { readonly page: number; readonly total_pages: number }): Response {
+  return json({ success: true, errors: [], messages: [], result, ...(resultInfo && { result_info: resultInfo }) });
+}
+
+/** Records every request and answers it with `respond`; a throw becomes a rejected fetch. */
+function fakeApi(respond: (url: URL) => Response): FakeApi {
+  const calls: FakeCall[] = [];
+  return {
+    calls,
+    fetch: async (url, init) => {
+      const parsed = new URL(url);
+      calls.push({ url: parsed, init });
+      return respond(parsed);
+    },
+  };
+}
+
+/** Serves the three endpoints the run reads, under any account id. */
+function cloudflare({ scripts, builds, logs }: CloudflareFixture = {}): FakeApi {
+  return fakeApi((url) => {
+    const path = url.pathname.replace(/^\/client\/v4\/accounts\/[^/]+/, "");
+    if (path === "/workers/scripts") {
+      return ok(scripts ?? [{ id: "other-worker", tag: "0000" }, { id: "athkar", tag: WORKER_TAG }]);
+    }
+    if (path === `/builds/workers/${WORKER_TAG}/builds` && builds) {
+      const page = Number(url.searchParams.get("page"));
+      const { builds: result, totalPages } = builds(page);
+      return ok(result, { page, total_pages: totalPages });
+    }
+    if (/^\/builds\/builds\/[^/]+\/logs$/.test(path) && logs) {
+      return ok(logs(url.searchParams.get("cursor")));
+    }
+    return json({ success: false, errors: [{ code: 7003, message: "No route for that URI" }] }, 404);
+  });
+}
+
+/** Pages of builds from fixed lists, reporting the real page count like Cloudflare does. */
+function pages(...lists: readonly (readonly BuildFixture[])[]): (page: number) => BuildsPage {
+  return (page) => ({ builds: lists[page - 1] ?? [], totalPages: lists.length });
+}
+
+function requested(api: FakeApi): string[] {
+  return api.calls.map(({ url }) => `${url.pathname}${url.search}`);
+}
+
+interface CliCase {
+  readonly argv?: readonly string[];
+  readonly env?: { readonly CLOUDFLARE_ACCOUNT_ID?: string };
+  readonly readConfig?: () => string;
+  readonly getToken?: () => string;
+  readonly api?: FakeApi;
+}
+
+interface CliResult {
+  readonly code: number;
+  readonly out: readonly string[];
+  readonly err: readonly string[];
+  readonly tokenReads: number;
+}
+
+/** Runs the CLI's whole flow once against fakes and collects what it printed. */
+async function runCli({
+  argv = [],
+  env = {},
+  readConfig = () => CONFIG,
+  getToken = () => FAKE_CREDENTIAL,
+  api = cloudflare(),
+}: CliCase = {}): Promise<CliResult> {
+  const out: string[] = [];
+  const err: string[] = [];
+  const tokenSource = vi.fn(getToken);
+  const code = await run({
+    argv,
+    env,
+    readConfig,
+    getToken: tokenSource,
+    fetch: api.fetch,
+    out: (line) => {
+      out.push(line);
+    },
+    err: (line) => {
+      err.push(line);
+    },
+  });
+  return { code, out, err, tokenReads: tokenSource.mock.calls.length };
+}
+
+describe("run", () => {
+  // Only created_at and a top-level branch: the fallbacks for timestamp and branch.
+  const newest: BuildFixture = {
+    build_uuid: NEWEST,
+    created_at: "2026-10-02T10:00:00Z",
+    status: "stopped",
+    build_outcome: "success",
+    branch: "feat/x",
+    build_trigger_metadata: { commit_hash: "0a1b2c3d4e5f", commit_message: "feat: add counters" },
+  };
+  const older: BuildFixture = {
+    build_uuid: OLDER,
+    created_on: "2026-10-01T10:00:00Z",
+    status: "stopped",
+    build_outcome: "failure",
+    build_trigger_metadata: { branch: "main", commit_hash: "ffffffffffff", commit_message: "chore: old" },
+  };
+  const newestHeader = [`Build ${NEWEST}  stopped success`, "Branch feat/x  commit 0a1b2c3  feat: add counters", RULE];
+
+  it("prints the newest build's header, then its log lines", async () => {
+    const api = cloudflare({
+      builds: pages([older, newest]),
+      logs: () => ({
+        lines: [["2026-10-02T10:00:01Z", "Cloning repository..."], "Build finished"],
+        cursor: "ignored-when-not-truncated",
+        truncated: false,
+      }),
+    });
+    expect(await runCli({ api })).toEqual({
+      code: 0,
+      out: [...newestHeader, "Cloning repository...", "Build finished"],
+      err: [],
+      tokenReads: 1,
+    });
+    expect(requested(api)).toEqual([
+      `/client/v4/accounts/${ACCOUNT}/workers/scripts`,
+      `/client/v4/accounts/${ACCOUNT}/builds/workers/${WORKER_TAG}/builds?page=1&per_page=50`,
+      `/client/v4/accounts/${ACCOUNT}/builds/builds/${NEWEST}/logs`,
+    ]);
   });
 
-  it("rejects missing or malformed account ids", () => {
-    expect(() => resolveAccountId(undefined, undefined)).toThrow(/account_id/);
-    expect(() => resolveAccountId("../x", undefined)).toThrow(/32 hex/);
+  it("sends the token only as a bearer header, with a 30s timeout on each request", async () => {
+    const api = cloudflare({ builds: pages([newest]), logs: () => ({}) });
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    try {
+      await runCli({ api });
+      expect(timeout.mock.calls).toEqual([[30_000], [30_000], [30_000]]);
+      api.calls.forEach(({ init }, i) => expect(init?.signal).toBe(timeout.mock.results[i]?.value));
+    } finally {
+      timeout.mockRestore();
+    }
+    expect(api.calls).toHaveLength(3);
+    for (const { url, init } of api.calls) {
+      expect(new Headers(init?.headers).get("Authorization")).toBe(`Bearer ${FAKE_CREDENTIAL}`);
+      expect(url.href).not.toContain(FAKE_CREDENTIAL);
+    }
+  });
+
+  it("prints placeholders when a build has no status or trigger metadata", async () => {
+    const bare: BuildFixture = { build_uuid: NEWEST, created_on: "2026-10-02T10:00:00Z" };
+    const api = cloudflare({ builds: pages([bare]), logs: () => ({}) });
+    expect(await runCli({ api })).toEqual({
+      code: 0,
+      out: [`Build ${NEWEST}`, "Branch ?  commit ?  ", RULE],
+      err: [],
+      tokenReads: 1,
+    });
+  });
+
+  it("with a build UUID, prints only that build's logs without looking up builds", async () => {
+    const api = cloudflare({ logs: () => ({ lines: ["only these"] }) });
+    expect(await runCli({ argv: [OLDER], api })).toEqual({ code: 0, out: ["only these"], err: [], tokenReads: 1 });
+    expect(requested(api)).toEqual([`/client/v4/accounts/${ACCOUNT}/builds/builds/${OLDER}/logs`]);
+  });
+
+  it("encodes a build UUID taken from the API before putting it in the logs path", async () => {
+    // Unlike a UUID from the command line, this one is never validated, so only encoding
+    // keeps it inside its path segment.
+    const api = cloudflare({
+      builds: pages([{ build_uuid: "../x?y", created_on: "2026-10-02T10:00:00Z" }]),
+      logs: () => ({}),
+    });
+    expect(await runCli({ api })).toEqual({
+      code: 0,
+      out: ["Build ../x?y", "Branch ?  commit ?  ", RULE],
+      err: [],
+      tokenReads: 1,
+    });
+    expect(requested(api)).toEqual([
+      `/client/v4/accounts/${ACCOUNT}/workers/scripts`,
+      `/client/v4/accounts/${ACCOUNT}/builds/workers/${WORKER_TAG}/builds?page=1&per_page=50`,
+      `/client/v4/accounts/${ACCOUNT}/builds/builds/..%2Fx%3Fy/logs`,
+    ]);
+  });
+
+  it("treats an empty argument as no build id and looks up the latest build", async () => {
+    const api = cloudflare({ builds: pages([newest]), logs: () => ({}) });
+    expect(await runCli({ argv: [""], api })).toEqual({ code: 0, out: newestHeader, err: [], tokenReads: 1 });
+  });
+
+  it("--branch picks that branch's latest build across two pages of builds", async () => {
+    const mainLatest: BuildFixture = {
+      build_uuid: MAIN_LATEST,
+      created_on: "2026-10-01T12:00:00Z",
+      status: "stopped",
+      build_outcome: "success",
+      build_trigger_metadata: { branch: "main", commit_hash: "1234567890ab", commit_message: "fix: main" },
+    };
+    const api = cloudflare({ builds: pages([newest, older], [mainLatest]), logs: () => ({ lines: ["main log"] }) });
+    expect(await runCli({ argv: ["--branch", "main"], api })).toEqual({
+      code: 0,
+      out: [`Build ${MAIN_LATEST}  stopped success`, "Branch main  commit 1234567  fix: main", RULE, "main log"],
+      err: [],
+      tokenReads: 1,
+    });
+    expect(requested(api)).toEqual([
+      `/client/v4/accounts/${ACCOUNT}/workers/scripts`,
+      `/client/v4/accounts/${ACCOUNT}/builds/workers/${WORKER_TAG}/builds?page=1&per_page=50`,
+      `/client/v4/accounts/${ACCOUNT}/builds/workers/${WORKER_TAG}/builds?page=2&per_page=50`,
+      `/client/v4/accounts/${ACCOUNT}/builds/builds/${MAIN_LATEST}/logs`,
+    ]);
+  });
+
+  it("--branch and the header use the trigger's branch over the top-level one", async () => {
+    const bothBranches: BuildFixture = {
+      build_uuid: NEWEST,
+      created_on: "2026-10-02T10:00:00Z",
+      branch: "old-name",
+      build_trigger_metadata: { branch: "main", commit_hash: "0a1b2c3d4e5f", commit_message: "fix: main" },
+    };
+    const api = cloudflare({ builds: pages([bothBranches]), logs: () => ({}) });
+    expect(await runCli({ argv: ["--branch", "main"], api })).toEqual({
+      code: 0,
+      out: [`Build ${NEWEST}`, "Branch main  commit 0a1b2c3  fix: main", RULE],
+      err: [],
+      tokenReads: 1,
+    });
+  });
+
+  it.each<[string, readonly BuildFixture[]]>([
+    [
+      "created_on, which wins over created_at",
+      [
+        { build_uuid: OLDER, created_on: "2026-10-01T10:00:00Z", created_at: "2026-10-03T10:00:00Z" },
+        { build_uuid: NEWEST, created_on: "2026-10-02T10:00:00Z" },
+      ],
+    ],
+    [
+      "timestamp, counting a build without one as the oldest",
+      [{ build_uuid: OLDER }, { build_uuid: NEWEST, created_on: "2026-10-02T10:00:00Z" }],
+    ],
+  ])("picks the latest build by %s", async (_, builds) => {
+    const api = cloudflare({ builds: pages(builds), logs: () => ({}) });
+    expect((await runCli({ api })).out[0]).toBe(`Build ${NEWEST}`);
+  });
+
+  it("stops paging through builds after 20 pages", async () => {
+    const buildOnPage = (page: number): BuildFixture => ({
+      build_uuid: `00000000-0000-4000-8000-${String(page).padStart(12, "0")}`,
+      created_on: new Date(Date.UTC(2026, 8, page)).toISOString(),
+    });
+    const api = cloudflare({ builds: (page) => ({ builds: [buildOnPage(page)], totalPages: 99 }), logs: () => ({}) });
+    const result = await runCli({ api });
+    expect(requested(api).filter((path) => path.includes("/builds?"))).toHaveLength(20);
+    expect(result.out[0]).toBe(`Build ${buildOnPage(20).build_uuid}`);
+  });
+
+  it.each<[string, CloudflareFixture, readonly string[], string]>([
+    ["the worker is missing", { scripts: [{ id: "other-worker", tag: "0000" }] }, [], `Worker "athkar" not found in account ${ACCOUNT}.`],
+    ["there are no builds", { builds: pages([]) }, [], "No builds yet."],
+    ["no build is on the --branch", { builds: pages([newest, older]) }, ["--branch", "nope"], 'No builds for branch "nope".'],
+  ])("exits 1 with a clear error when %s", async (_, fixture, argv, message) => {
+    expect(await runCli({ argv, api: cloudflare(fixture) })).toEqual({
+      code: 1,
+      out: [],
+      err: [`cf-build-logs: ${message}`],
+      tokenReads: 1,
+    });
+  });
+
+  it("stops when a log cursor comes back again", async () => {
+    const byCursor: Record<string, LogsPage> = {
+      start: { lines: ["first"], cursor: "a/1+", truncated: true },
+      "a/1+": { lines: ["second"], cursor: "b", truncated: true },
+      b: { lines: ["third"], cursor: "a/1+", truncated: true },
+    };
+    const api = cloudflare({ logs: (cursor) => byCursor[cursor ?? "start"] });
+    expect(await runCli({ argv: [NEWEST], api })).toEqual({
+      code: 0,
+      out: ["first", "second", "third"],
+      err: [],
+      tokenReads: 1,
+    });
+    expect(requested(api)).toEqual([
+      `/client/v4/accounts/${ACCOUNT}/builds/builds/${NEWEST}/logs`,
+      `/client/v4/accounts/${ACCOUNT}/builds/builds/${NEWEST}/logs?cursor=a%2F1%2B`,
+      `/client/v4/accounts/${ACCOUNT}/builds/builds/${NEWEST}/logs?cursor=b`,
+    ]);
+  });
+
+  it("stops after 200 log pages and says so", async () => {
+    const api = cloudflare({
+      logs: (cursor) => {
+        const n = cursor === null ? 0 : Number(cursor.slice(1));
+        return { lines: [`page ${n}`], cursor: `c${n + 1}`, truncated: true };
+      },
+    });
+    const result = await runCli({ argv: [NEWEST], api });
+    expect(api.calls).toHaveLength(200);
+    expect(result.code).toBe(0);
+    expect(result.out).toHaveLength(200);
+    expect(result.out.at(-1)).toBe("page 199");
+    expect(result.err).toEqual(["cf-build-logs: stopped after 200 log pages"]);
+  });
+
+  it.each<[string, unknown]>([
+    ["a string", "abc"],
+    ["an object", { a: 1 }],
+    ["a number", 5],
+  ])("exits 1 when log lines come back as %s instead of a list", async (_, lines) => {
+    const api = cloudflare({ logs: () => ({ lines }) });
+    expect(await runCli({ argv: [NEWEST], api })).toEqual({
+      code: 1,
+      out: [],
+      err: ["cf-build-logs: lines.map is not a function"],
+      tokenReads: 1,
+    });
+  });
+
+  // V8's own TypeError text, exactly as the script printed it before run(deps).
+  it.each<[string, unknown, string]>([
+    ["an object", { a: 1 }, "Spread syntax requires ...iterable[Symbol.iterator] to be a function"],
+    ["null", null, "body.result is not iterable (cannot read property null)"],
+  ])("exits 1 when a page of builds is %s instead of a list", async (_, result, message) => {
+    const api = fakeApi((url) =>
+      url.pathname.endsWith("/workers/scripts") ? ok([{ id: "athkar", tag: WORKER_TAG }]) : ok(result),
+    );
+    expect(await runCli({ api })).toEqual({ code: 1, out: [], err: [`cf-build-logs: ${message}`], tokenReads: 1 });
+  });
+
+  it("pages with & when the worker tag already put a query in the builds path", async () => {
+    // The tag from the API goes into the path unencoded, so it can carry its own "?".
+    const api = fakeApi((url) => {
+      if (url.pathname.endsWith("/workers/scripts")) return ok([{ id: "athkar", tag: "ab?x=1" }]);
+      if (url.pathname.endsWith("/logs")) return ok({});
+      return ok([newest]);
+    });
+    expect(await runCli({ api })).toEqual({ code: 0, out: newestHeader, err: [], tokenReads: 1 });
+    expect(requested(api)).toEqual([
+      `/client/v4/accounts/${ACCOUNT}/workers/scripts`,
+      `/client/v4/accounts/${ACCOUNT}/builds/workers/ab?x=1/builds&page=1&per_page=50`,
+      `/client/v4/accounts/${ACCOUNT}/builds/builds/${NEWEST}/logs`,
+    ]);
+  });
+
+  it.each<[readonly string[], string]>([
+    [["--branch"], "--branch needs a value"],
+    [["--branch", "--other"], "--branch needs a value"],
+    [["../../user/tokens/verify"], '"../../user/tokens/verify" is not a build UUID'],
+  ])("rejects %j before reading credentials or calling the API", async (argv, message) => {
+    const api = cloudflare();
+    expect(await runCli({ argv, api })).toEqual({
+      code: 1,
+      out: [],
+      err: [`cf-build-logs: ${message}`],
+      tokenReads: 0,
+    });
+    expect(api.calls).toEqual([]);
+  });
+
+  it.each<[string, string | undefined, string]>([
+    ["a set env var wins", OTHER_ACCOUNT, OTHER_ACCOUNT],
+    ["the env var is trimmed", ` ${OTHER_ACCOUNT} `, OTHER_ACCOUNT],
+    ["an empty env var falls back to wrangler.jsonc", "", ACCOUNT],
+    ["an unset env var falls back to wrangler.jsonc", undefined, ACCOUNT],
+  ])("account id: %s", async (_, fromEnv, expected) => {
+    const api = cloudflare({ logs: () => ({}) });
+    await runCli({ argv: [NEWEST], env: { CLOUDFLARE_ACCOUNT_ID: fromEnv }, api });
+    expect(requested(api)).toEqual([`/client/v4/accounts/${expected}/builds/builds/${NEWEST}/logs`]);
+  });
+
+  it.each<[string, CliCase, string]>([
+    ["is malformed", { env: { CLOUDFLARE_ACCOUNT_ID: "../x" } }, "Account id must be 32 hex characters."],
+    [
+      "is missing",
+      { readConfig: () => '{ "name": "athkar" }' },
+      "Set account_id in wrangler.jsonc or CLOUDFLARE_ACCOUNT_ID.",
+    ],
+  ])("rejects an account id that %s before reading credentials or calling the API", async (_, cliCase, message) => {
+    const api = cloudflare();
+    expect(await runCli({ ...cliCase, api })).toEqual({
+      code: 1,
+      out: [],
+      err: [`cf-build-logs: ${message}`],
+      tokenReads: 0,
+    });
+    expect(api.calls).toEqual([]);
+  });
+
+  it.each<[string, CliCase, string, number]>([
+    [
+      "an unreadable config",
+      {
+        readConfig: () => {
+          throw new Error("ENOENT: no such file or directory, open 'wrangler.jsonc'");
+        },
+      },
+      "ENOENT: no such file or directory, open 'wrangler.jsonc'",
+      0,
+    ],
+    [
+      "a missing token",
+      {
+        getToken: () => {
+          throw new Error("No token. Set CLOUDFLARE_BUILDS_API_TOKEN.");
+        },
+      },
+      "No token. Set CLOUDFLARE_BUILDS_API_TOKEN.",
+      1,
+    ],
+    [
+      "a thrown string",
+      {
+        getToken: () => {
+          throw "plain";
+        },
+      },
+      "plain",
+      1,
+    ],
+    [
+      "a throw without a value",
+      {
+        readConfig: () => {
+          throw undefined;
+        },
+      },
+      "unknown error",
+      0,
+    ],
+  ])("reports %s as one error line", async (_, cliCase, message, tokenReads) => {
+    const api = cloudflare();
+    expect(await runCli({ ...cliCase, api })).toEqual({
+      code: 1,
+      out: [],
+      err: [`cf-build-logs: ${message}`],
+      tokenReads,
+    });
+    expect(api.calls).toEqual([]);
+  });
+
+  it("strips terminal control characters from the header and log lines", async () => {
+    const hostile: BuildFixture = {
+      build_uuid: NEWEST,
+      created_on: "2026-10-02T10:00:00Z",
+      status: "stopped\u001b[0m",
+      build_outcome: "success",
+      build_trigger_metadata: {
+        branch: "main\u0007",
+        commit_hash: "0a1b2c3d4e5f",
+        commit_message: "fix: \u001b[2Jclear\u009b screen",
+      },
+    };
+    const api = cloudflare({
+      builds: pages([hostile]),
+      logs: () => ({ lines: [["2026-10-02T10:00:01Z", "ok\u001b[2Jcleared\u0007\tdone"], "أذكار\u0000"] }),
+    });
+    expect(await runCli({ api })).toEqual({
+      code: 0,
+      out: [
+        `Build ${NEWEST}  stopped[0m success`,
+        "Branch main  commit 0a1b2c3  fix: [2Jclear screen",
+        RULE,
+        "ok[2Jcleared\tdone",
+        "أذكار",
+      ],
+      err: [],
+      tokenReads: 1,
+    });
+  });
+
+  it("strips terminal control characters from API error text", async () => {
+    const api = fakeApi(() =>
+      json({ success: false, errors: [{ code: 10000, message: "Authentication error\u001b]0;owned\u0007" }] }, 403),
+    );
+    expect(await runCli({ api })).toEqual({
+      code: 1,
+      out: [],
+      err: [`cf-build-logs: /accounts/${ACCOUNT}/workers/scripts: 10000 Authentication error]0;owned`],
+      tokenReads: 1,
+    });
+  });
+
+  it("strips terminal control characters from argument errors", async () => {
+    expect(await runCli({ argv: ["\u001b[31mbad\u0007"] })).toEqual({
+      code: 1,
+      out: [],
+      err: ['cf-build-logs: "[31mbad" is not a build UUID'],
+      tokenReads: 0,
+    });
+  });
+
+  it("strips terminal control characters from errors raised while reading the token", async () => {
+    const getToken = () => {
+      throw new Error("Keychain said \u001b[2Jno");
+    };
+    expect(await runCli({ argv: [NEWEST], getToken })).toEqual({
+      code: 1,
+      out: [],
+      err: ["cf-build-logs: Keychain said [2Jno"],
+      tokenReads: 1,
+    });
+  });
+
+  it("never prints the token, even when fetch's own error quotes it", async () => {
+    const api = cloudflare({
+      builds: pages([newest]),
+      logs: () => {
+        throw new Error(`fetch failed: Authorization: Bearer ${FAKE_CREDENTIAL}`);
+      },
+    });
+    const result = await runCli({ api });
+    expect(result).toEqual({
+      code: 1,
+      out: newestHeader,
+      err: [`cf-build-logs: /accounts/${ACCOUNT}/builds/builds/${NEWEST}/logs: network error`],
+      tokenReads: 1,
+    });
+    expect(new Headers(api.calls.at(-1)?.init?.headers).get("Authorization")).toBe(`Bearer ${FAKE_CREDENTIAL}`);
+    expect([...result.out, ...result.err].join("\n")).not.toContain(FAKE_CREDENTIAL);
+  });
+
+  it("reports a timed-out request without fetch's own message", async () => {
+    const api = fakeApi(() => {
+      throw new DOMException(`aborted while sending Bearer ${FAKE_CREDENTIAL}`, "TimeoutError");
+    });
+    expect(await runCli({ api })).toEqual({
+      code: 1,
+      out: [],
+      err: [`cf-build-logs: /accounts/${ACCOUNT}/workers/scripts: timed out after 30s`],
+      tokenReads: 1,
+    });
+  });
+
+  it.each<[string, Error, string]>([
+    [
+      "drops the connection",
+      new Error(`socket reset while sending Authorization: Bearer ${FAKE_CREDENTIAL}`),
+      "network error",
+    ],
+    ["times out", new DOMException(`aborted while reading Bearer ${FAKE_CREDENTIAL}`, "TimeoutError"), "timed out after 30s"],
+  ])("maps a response body that %s mid-read like a failed request, without its message", async (_, error, why) => {
+    const api = fakeApi(() => new Response(new ReadableStream({ pull: (controller) => controller.error(error) })));
+    expect(await runCli({ api })).toEqual({
+      code: 1,
+      out: [],
+      err: [`cf-build-logs: /accounts/${ACCOUNT}/workers/scripts: ${why}`],
+      tokenReads: 1,
+    });
+  });
+
+  it.each<[string, () => Response, string]>([
+    [
+      "Cloudflare's error list",
+      () =>
+        json(
+          {
+            success: false,
+            errors: [
+              { code: 9109, message: "Invalid access token" },
+              { code: 10000, message: "Authentication error" },
+            ],
+          },
+          403,
+        ),
+      "9109 Invalid access token; 10000 Authentication error",
+    ],
+    ["a gateway HTML page", () => new Response("<html>502 Bad Gateway</html>", { status: 502 }), "HTTP 502"],
+    ["an empty body", () => new Response(""), "HTTP 200"],
+    ["a JSON body that is not an object", () => new Response("null"), "HTTP 200"],
+    ["an unsuccessful body without errors", () => json({ success: false, errors: [] }), "HTTP 200"],
+    ["an error status with a successful body", () => json({ success: true, result: [] }, 500), "HTTP 500"],
+  ])("maps %s to an error line", async (_, respond, why) => {
+    expect(await runCli({ api: fakeApi(respond) })).toEqual({
+      code: 1,
+      out: [],
+      err: [`cf-build-logs: /accounts/${ACCOUNT}/workers/scripts: ${why}`],
+      tokenReads: 1,
+    });
   });
 });
 
-describe("sanitizeTerminal", () => {
-  it("strips ANSI escapes and control characters but keeps tabs and text", () => {
-    expect(sanitizeTerminal("ok\u001b[2Jcleared\u0007\tdone")).toBe("ok[2Jcleared\tdone");
-    expect(sanitizeTerminal("أذكار")).toBe("أذكار");
-  });
-});
+describe("the command line", () => {
+  const script = fileURLToPath(new URL("./cf-build-logs.ts", import.meta.url));
 
-describe("errorMessage", () => {
-  it("handles Error instances and non-Error throws", () => {
-    expect(errorMessage(new Error("boom"))).toBe("boom");
-    expect(errorMessage("plain")).toBe("plain");
-    expect(errorMessage(undefined)).toBe("unknown error");
+  // Invalid arguments fail before the token is read, and this token would fail validation
+  // anyway, so the child can never reach the Keychain or the network.
+  it.each<[readonly string[], string]>([
+    [["--branch"], "cf-build-logs: --branch needs a value\n"],
+    [["\u001b[31mbad\u0007"], 'cf-build-logs: "[31mbad" is not a build UUID\n'],
+  ])("prints the cleaned error for %j to stderr and exits 1", (args, stderr) => {
+    const child = spawnSync(process.execPath, ["--no-warnings", script, ...args], {
+      encoding: "utf8",
+      env: { ...process.env, CLOUDFLARE_BUILDS_API_TOKEN: "not a token" },
+      timeout: 10_000,
+    });
+    expect({ status: child.status, stdout: child.stdout, stderr: child.stderr }).toEqual({
+      status: 1,
+      stdout: "",
+      stderr,
+    });
   });
 });
