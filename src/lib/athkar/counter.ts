@@ -97,8 +97,13 @@ export function tap(progress: ReadingProgress, index: number): ProgressStep {
   };
 }
 
-/** Restarts the zekr at `index` from its target count. */
+/**
+ * Restarts the zekr at `index` from its target count. A zekr that was never
+ * tapped is left as it is and nothing is announced.
+ */
 export function reset(progress: ReadingProgress, index: number): ProgressStep {
+  // Nothing to undo: same progress, nothing announced (the button is aria-disabled).
+  if (!canReset(progress[index])) return { progress, outcome: QUIET };
   const n = index + 1;
   return {
     progress: replaceAt(progress, index, restart(progress[index])),

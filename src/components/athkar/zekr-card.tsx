@@ -81,7 +81,9 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
         <button
           type="button"
           data-counter
-          onClick={() => !done && onTap()}
+          // No guard here: this render may be stale when several clicks land in one
+          // task, so the counter module decides (a tap on a finished zekr is ignored).
+          onClick={onTap}
           aria-disabled={done}
           aria-label={done ? "تم هذا الذكر" : `اضغط للعد، المتبقي ${counter.remaining}`}
           style={{ "--hue": done ? 150 : 60 } as React.CSSProperties}
@@ -135,7 +137,9 @@ function IconButton({
   return (
     <button
       type="button"
-      onClick={() => !disabled && onClick()}
+      // aria-disabled only: the handler itself ignores the click when there is
+      // nothing to do, because this render may be stale within one task.
+      onClick={onClick}
       aria-disabled={disabled}
       aria-label={label}
       title={label}

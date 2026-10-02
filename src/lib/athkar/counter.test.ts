@@ -147,3 +147,12 @@ describe("reading a whole situation", () => {
     expect(summarize(restarted).canResetAll).toBe(false);
   });
 });
+
+describe("reset of an untouched zekr", () => {
+  it("returns the same progress and announces nothing", () => {
+    const progress = createProgress([{ count: 3 }]);
+    const step = reset(progress, 0);
+    expect(step.progress).toBe(progress);
+    expect(step.outcome).toEqual({ counted: false, completed: false, nextPending: null, announcement: null });
+  });
+});

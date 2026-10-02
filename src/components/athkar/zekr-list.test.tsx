@@ -301,6 +301,53 @@ describe("ZekrList taps made before React re-renders", () => {
     expect(announcement()).toBe("الذكر 2: المتبقي 2");
   });
 
+  const resetOf = (card: HTMLElement) => card.querySelector<HTMLButtonElement>('button[aria-label="إعادة العدّ"]')!;
+
+  it("counts a tap and a reset of another zekr made together", () => {
+    const { card, counterOf, announcement } = renderList(items);
+    click(counterOf("1-2"));
+    clickInOneTask(counterOf("1-1"), resetOf(card("1-2")));
+    expect(counterOf("1-1").getAttribute("aria-label")).toBe("اضغط للعد، المتبقي 2");
+    expect(counterOf("1-2").getAttribute("aria-label")).toBe("اضغط للعد، المتبقي 3");
+    expect(announcement()).toBe("أُعيد عدّ الذكر 2");
+  });
+
+  it("counts a tap made right after resetting a finished zekr", () => {
+    const { card, counterOf, announcement, doneText } = renderList(singles);
+    click(counterOf("2-1"));
+    clickInOneTask(resetOf(card("2-1")), counterOf("2-1"));
+    expect(counterOf("2-1").getAttribute("aria-label")).toBe("تم هذا الذكر");
+    expect(doneText()).toBe("أتممت 1 من 3");
+    expect(announcement()).toBe("تمّ الذكر 1");
+  });
+
+  it("resets a zekr that was tapped in the same task", () => {
+    const { card, counterOf, announcement } = renderList(items);
+    clickInOneTask(counterOf("1-1"), resetOf(card("1-1")));
+    expect(counterOf("1-1").getAttribute("aria-label")).toBe("اضغط للعد، المتبقي 3");
+    expect(announcement()).toBe("أُعيد عدّ الذكر 1");
+  });
+
+  it("ignores a reset of an untouched zekr", () => {
+    const { card, counterOf, announcement } = renderList(items);
+    click(resetOf(card("1-1")));
+    expect(counterOf("1-1").getAttribute("aria-label")).toBe("اضغط للعد، المتبقي 3");
+    expect(announcement()).toBe("");
+  });
+
+  it("moves focus to the next counter without an extra scroll jump", () => {
+    const focus = vi.spyOn(HTMLElement.prototype, "focus");
+    try {
+      const { counterOf } = renderList(singles);
+      click(counterOf("2-1"));
+      act(() => vi.advanceTimersByTime(ADVANCE_DELAY_MS));
+      expect(focus).toHaveBeenLastCalledWith({ preventScroll: true });
+      expect(focus.mock.contexts.at(-1)).toBe(counterOf("2-2"));
+    } finally {
+      focus.mockRestore();
+    }
+  });
+
   it("keeps the completion announcement when the finished counter is tapped again", () => {
     const { counterOf, announcement, doneText } = renderList(singles);
     const first = counterOf("2-1");
