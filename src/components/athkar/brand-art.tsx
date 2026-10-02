@@ -1,9 +1,11 @@
+import { preload } from "react-dom";
 import { cn } from "@/lib/utils";
 
 export const ART = {
-  // Widths of the exported WebP files, ascending; the last one is the fallback src
-  // and sets the intrinsic size. `ratio` is height / width (brand-art.test.ts checks
-  // every file). Keep scripts/brand/build-brand-assets.mjs in step with these lists.
+  // Widths of the exported files, ascending. Each exists as .avif and as .webp; the
+  // largest WebP is the fallback src and sets the intrinsic size. `ratio` is
+  // height / width (brand-art.test.ts checks every file). Keep
+  // scripts/brand/build-brand-assets.mjs in step with these lists.
   rehal: { sizes: [560, 720, 800, 880, 960], ratio: 904 / 960 },
   beads: { sizes: [480, 640, 800], ratio: 593 / 800 },
 } as const;
@@ -26,7 +28,10 @@ export const SLOT_SIZES = {
   notFoundBeads: "(min-width: 480px) 320px, calc(80vw - 64px)",
 } as const;
 
-/** Decorative clay illustrations, pre-sized WebP with a responsive srcset. */
+/**
+ * Decorative clay illustrations: pre-sized AVIF with a WebP fallback, each with a
+ * responsive srcset.
+ */
 export function BrandArt({
   name,
   className,
@@ -39,22 +44,38 @@ export function BrandArt({
   sizes?: string;
 }) {
   const art = ART[name];
-  const url = (width: number) => `/brand/hero-${name}-${width}.webp`;
+  const url = (width: number, format: "avif" | "webp") => `/brand/hero-${name}-${width}.${format}`;
+  const srcSet = (format: "avif" | "webp") => art.sizes.map((width) => `${url(width, format)} ${width}w`).join(", ");
   const largest = art.sizes[art.sizes.length - 1];
+  if (priority) {
+    // React preloads an eager <img> by itself, but not one inside <picture> (the
+    // <source> may pick another file). Preload the AVIF the <source> will pick; a
+    // browser without AVIF ignores the typed link and finds the WebP <img> instead.
+    preload(url(largest, "avif"), {
+      as: "image",
+      type: "image/avif",
+      imageSrcSet: srcSet("avif"),
+      imageSizes: sizes,
+      fetchPriority: "high",
+    });
+  }
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- static export: pre-sized WebP with srcset
-    <img
-      src={url(largest)}
-      srcSet={art.sizes.map((width) => `${url(width)} ${width}w`).join(", ")}
-      sizes={sizes}
-      width={largest}
-      height={Math.round(largest * art.ratio)}
-      alt=""
-      aria-hidden="true"
-      loading={priority ? "eager" : "lazy"}
-      fetchPriority={priority ? "high" : "auto"}
-      decoding="async"
-      className={cn("h-auto select-none drop-shadow-[0_24px_30px_oklch(0.35_0.06_160/0.22)]", className)}
-    />
+    // `contents` keeps the <img> the only layout box, as it was before <picture>.
+    <picture className="contents">
+      <source type="image/avif" srcSet={srcSet("avif")} sizes={sizes} />
+      <img
+        src={url(largest, "webp")}
+        srcSet={srcSet("webp")}
+        sizes={sizes}
+        width={largest}
+        height={Math.round(largest * art.ratio)}
+        alt=""
+        aria-hidden="true"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
+        decoding="async"
+        className={cn("h-auto select-none drop-shadow-[0_24px_30px_oklch(0.35_0.06_160/0.22)]", className)}
+      />
+    </picture>
   );
 }

@@ -6,15 +6,19 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { ART, BrandArt, SLOT_SIZES } from "./brand-art";
 
-const BRAND = join(__dirname, "../../../public/brand");
-const fileFor = (name: keyof typeof ART, width: number) => join(BRAND, `hero-${name}-${width}.webp`);
+type Name = keyof typeof ART;
+type Format = "avif" | "webp";
 
-describe("BrandArt intrinsic size", () => {
+const BRAND = join(__dirname, "../../../public/brand");
+const fileFor = (name: Name, width: number, format: Format) => join(BRAND, `hero-${name}-${width}.${format}`);
+const arts = Object.entries(ART) as [Name, (typeof ART)[Name]][];
+
+describe.each(["webp", "avif"] as const)("BrandArt %s files", (format) => {
   // The width/height attributes reserve space before the image loads; a wrong
   // ratio shifts everything below the hero once it arrives.
-  it.each(Object.entries(ART))("%s ratio matches every srcset file within 1px", async (name, art) => {
+  it.each(arts)("%s ratio matches every srcset file within 1px", async (name, art) => {
     for (const width of art.sizes) {
-      const meta = await sharp(fileFor(name as keyof typeof ART, width)).metadata();
+      const meta = await sharp(fileFor(name, width, format)).metadata();
       expect(meta.width).toBe(width);
       expect(Math.abs(Math.round(width * art.ratio) - (meta.height ?? 0))).toBeLessThanOrEqual(1);
     }
@@ -22,28 +26,43 @@ describe("BrandArt intrinsic size", () => {
 
   // A variant that is a renamed copy of a bigger one would make phones pay for
   // pixels they never see, so every step down must really be smaller.
-  it.each(Object.entries(ART))("%s widths ascend and each file is smaller than the next", (name, art) => {
+  it.each(arts)("%s widths ascend and each file is smaller than the next", (name, art) => {
     const widths = [...art.sizes];
     expect(widths).toEqual([...widths].sort((a, b) => a - b));
     expect(new Set(widths).size).toBe(widths.length);
-    const bytes = widths.map((w) => statSync(fileFor(name as keyof typeof ART, w)).size);
+    const bytes = widths.map((w) => statSync(fileFor(name, w, format)).size);
     expect(bytes).toEqual([...bytes].sort((a, b) => a - b));
     expect(new Set(bytes).size).toBe(bytes.length);
   });
 });
 
+describe("BrandArt AVIF", () => {
+  // AVIF is only worth a second file set (and a <picture>) while it is clearly
+  // smaller than the WebP it sits in front of; the encoder settings in
+  // scripts/brand/build-brand-assets.mjs were chosen to keep composite SSIM at or above WebP.
+  it.each(arts)("%s saves at least 25%% against the WebP of the same width", (name, art) => {
+    for (const width of art.sizes) {
+      const avif = statSync(fileFor(name, width, "avif")).size;
+      const webp = statSync(fileFor(name, width, "webp")).size;
+      expect(avif).toBeLessThanOrEqual(webp * 0.75);
+    }
+  });
+});
+
 describe("BrandArt markup", () => {
   const html = (props: Parameters<typeof BrandArt>[0]) => renderToStaticMarkup(createElement(BrandArt, props));
+  const srcSet = (name: Name, format: Format) =>
+    ART[name].sizes.map((w) => `/brand/hero-${name}-${w}.${format} ${w}w`).join(", ");
 
-  it("lists every width in srcset and keeps the largest as src and intrinsic size", () => {
-    for (const [name, art] of Object.entries(ART)) {
-      const out = html({ name: name as keyof typeof ART });
+  it("offers AVIF first and keeps the WebP img as the fallback with the largest as src and intrinsic size", () => {
+    for (const [name, art] of arts) {
+      const out = html({ name, sizes: "123px" });
       const largest = art.sizes[art.sizes.length - 1];
-      const srcset = art.sizes.map((w) => `/brand/hero-${name}-${w}.webp ${w}w`).join(", ");
-      expect(out).toContain(`srcSet="${srcset}"`);
-      expect(out).toContain(`src="/brand/hero-${name}-${largest}.webp"`);
-      expect(out).toContain(`width="${largest}"`);
-      expect(out).toContain(`height="${Math.round(largest * art.ratio)}"`);
+      const height = Math.round(largest * art.ratio);
+      expect(out).toContain(
+        `<picture class="contents"><source type="image/avif" srcSet="${srcSet(name, "avif")}" sizes="123px"/>` +
+          `<img src="/brand/hero-${name}-${largest}.webp" srcSet="${srcSet(name, "webp")}" sizes="123px" width="${largest}" height="${height}" alt=""`,
+      );
     }
   });
 
@@ -56,6 +75,25 @@ describe("BrandArt markup", () => {
     const hero = html({ name: "rehal", priority: true });
     expect(hero).toContain('loading="eager"');
     expect(hero).toContain('fetchPriority="high"');
+  });
+
+  // React preloads an eager <img> itself, but not one inside <picture>, so the
+  // component has to; a WebP preload next to the AVIF source would download both.
+  it("preloads only the AVIF set of a priority image, with the same sizes as the picture", () => {
+    const links = html({ name: "rehal", priority: true, sizes: SLOT_SIZES.homeHero }).match(/<link[^>]*>/g) ?? [];
+    expect(links).toHaveLength(1);
+    const [link] = links;
+    expect(link).toContain('rel="preload"');
+    expect(link).toContain('as="image"');
+    expect(link).toContain('type="image/avif"');
+    expect(link).toContain('fetchPriority="high"');
+    expect(link).toContain(`imageSrcSet="${srcSet("rehal", "avif")}"`);
+    expect(link).toContain(`imageSizes="${SLOT_SIZES.homeHero}"`);
+    expect(link).not.toContain(".webp");
+  });
+
+  it("does not preload a lazy image", () => {
+    expect(html({ name: "beads" })).not.toContain("<link");
   });
 });
 
