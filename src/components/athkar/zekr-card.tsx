@@ -21,6 +21,7 @@ interface ZekrCardProps {
   readonly expanded?: boolean;
 }
 
+/** One zekr with its tap counter, reset, copy and share actions. */
 export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, expanded = false }: ZekrCardProps) {
   const done = isDone(counter);
   const [copied, setCopied] = useState(false);
