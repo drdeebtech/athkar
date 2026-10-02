@@ -14,7 +14,8 @@ import "./globals.css";
 // the site renders against the code points each file maps (src/fonts/cmap.json).
 // "Athkar Sans Arabic" is our subset of IBM Plex Sans Arabic and "Athkar Naskh" our
 // subset of Scheherazade New, renamed because "Plex", "Scheherazade" and "SIL" are
-// OFL Reserved Font Names (see THIRD_PARTY_NOTICES.md).
+// OFL Reserved Font Names (see THIRD_PARTY_NOTICES.md). Athkar Naskh, the reading
+// face, is declared in app/athkar/[id]/layout.tsx, the only route that uses it.
 
 const uiFont = localFont({
   variable: "--font-ui",
@@ -30,19 +31,6 @@ const displayFont = localFont({
   variable: "--font-baloo",
   src: [{ path: "../fonts/BalooBhaijaan2-Variable.woff2", weight: "400 800", style: "normal" }],
   display: "swap",
-});
-
-// The reading face is only used on situation pages, so it is not preloaded on
-// every page; a metric-matched serif fallback keeps layout shift low.
-const zekrFont = localFont({
-  variable: "--font-naskh",
-  src: [
-    { path: "../fonts/AthkarNaskh-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/AthkarNaskh-Bold.woff2", weight: "700", style: "normal" },
-  ],
-  display: "swap",
-  preload: false,
-  adjustFontFallback: "Times New Roman",
 });
 
 export const metadata: Metadata = {
@@ -73,7 +61,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl" className={`${uiFont.variable} ${displayFont.variable} ${zekrFont.variable}`} suppressHydrationWarning>
+    <html lang="ar" dir="rtl" className={`${uiFont.variable} ${displayFont.variable}`} suppressHydrationWarning>
       <head>
         {/* Runs synchronously before first paint; PRE_PAINT_SCRIPT is a build-time constant. */}
         <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_SCRIPT }} />

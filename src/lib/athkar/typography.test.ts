@@ -50,6 +50,21 @@ describe("phone typography", () => {
     expect(offending).toEqual([]);
   });
 
+  it("declares the reading face in the situation layout only, so other pages never load it", () => {
+    expect(read("app/layout.tsx")).not.toMatch(/AthkarNaskh|--font-naskh/);
+    expect(read("app/athkar/[id]/layout.tsx")).toContain('variable: "--font-naskh"');
+  });
+
+  it("sets .zekr-text in the reading face without the :root-level --font-zekr variable", () => {
+    // --font-naskh is defined on the situation layout's wrapper, not on <html>, so
+    // var(--font-zekr), which Tailwind declares on :root, would resolve to nothing
+    // and the adhkar would silently fall back to the UI face.
+    const css = readFileSync(join(SRC, "app/globals.css"), "utf8");
+    const rule = /\.zekr-text\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(rule).toMatch(/@apply font-zekr;|font-family:\s*var\(--font-naskh\)/);
+    expect(rule).not.toContain("var(--font-zekr)");
+  });
+
   it("uses the reading face only on situation pages; titles elsewhere are in the UI face", () => {
     const users = FILES.filter((f) => /\bfont-zekr\b|["'\s]zekr-text\b/.test(read(f)));
     expect(users).toContain("app/athkar/[id]/page.tsx");

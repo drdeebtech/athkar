@@ -189,7 +189,7 @@
 
 @layer components {
   .zekr-text {
-    font-family: var(--font-zekr);
+    @apply font-zekr;
     font-size: var(--zekr-size);
     line-height: 2.05;
     text-align: start;
