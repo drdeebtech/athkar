@@ -51,8 +51,11 @@ function fontFaces(): FallbackFace[] {
  * pages in four settings (360px at 1.75rem, 2.4rem and bold, 390px at 1.25rem), the
  * paragraphs whose line count changes on the swap number 78 / 64 / 57 / 55 / 66 for
  * 106.4 / 107.4 / 108.4 / 109.4 / 110.4% (700 two points higher), the fewest at the
- * HarfBuzz ratio. A page can still shift when one word sits on a line-break edge
- * (with every font held 2.5s, /athkar/1 at 360px scores about 0.15 at all five).
+ * HarfBuzz ratio. One size cannot fit every line, since Times New Roman's Arabic
+ * widths differ from Noto's by glyph: with every font held 2.5s, 20 situation pages
+ * at 360px and 390px (1.75rem) shifted less than on Amiri (mean CLS 0.028 against
+ * 0.037; 11 pages lower, 1 higher), but /athkar/21 at 360px rose to 0.08, where its
+ * short first line fits in the face and wraps in the fallback.
  *
  * The line height is fixed (2.05 and 1.6), but a text run's box is its font's
  * ascent plus descent, so a fallback with other vertical metrics moves every line
