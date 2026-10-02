@@ -8,7 +8,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-baloo), var(--font-ui), sans-serif;
-  --font-zekr: var(--font-naskh), "Traditional Arabic", serif;
+  --font-zekr: var(--font-naskh), "Athkar Naskh Fallback Times", "Athkar Naskh Fallback Noto", "Traditional Arabic", serif;
   --font-heading: var(--font-display);
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -36,6 +36,49 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.4);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ── Reading face fallbacks ───────────────────────────────────────────── */
+/* Drawn until Athkar Naskh arrives: Times New Roman on iPhone, Mac and Windows,
+   Noto Naskh Arabic on Android. Each is scaled to Athkar Naskh's width, so the
+   adhkar keep their line breaks, and given its ascent and descent, so the lines
+   do not move when it swaps in. Measured values and their source:
+   src/lib/athkar/font-fallback.test.ts. */
+@font-face {
+  font-family: "Athkar Naskh Fallback Times";
+  font-weight: 400;
+  src: local("Times New Roman"), local("TimesNewRomanPSMT");
+  size-adjust: 113%;
+  ascent-override: 118.83%;
+  descent-override: 61.66%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Athkar Naskh Fallback Times";
+  font-weight: 700;
+  src: local("Times New Roman Bold"), local("TimesNewRomanPS-BoldMT");
+  size-adjust: 115%;
+  ascent-override: 116.76%;
+  descent-override: 60.59%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Athkar Naskh Fallback Noto";
+  font-weight: 400;
+  src: local("Noto Naskh Arabic Regular"), local("NotoNaskhArabic-Regular"), local("Noto Naskh Arabic");
+  size-adjust: 104.3%;
+  ascent-override: 128.74%;
+  descent-override: 66.81%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Athkar Naskh Fallback Noto";
+  font-weight: 700;
+  src: local("Noto Naskh Arabic Bold"), local("NotoNaskhArabic-Bold");
+  size-adjust: 103.8%;
+  ascent-override: 129.36%;
+  descent-override: 67.13%;
+  line-gap-override: 0%;
 }
 
 /* ── Palette: warm sand clay, sage glaze, apricot accent ───────────────── */
