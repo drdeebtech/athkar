@@ -216,7 +216,10 @@ html[data-font="4"] { --zekr-size: 2.4rem; }
 
   /* Staggered entrance, capped so long lists never wait. */
   .rise {
-    animation: rise 640ms var(--ease-out-quart) both;
+    /* backwards, not both: once finished, no transform lingers. A lingering
+       transform makes each block its own stacking context, which let later
+       siblings paint over the search results. */
+    animation: rise 640ms var(--ease-out-quart) backwards;
     animation-delay: min(calc(var(--i, 0) * 35ms), 420ms);
   }
   /* Counter bead squish on each tap. */

@@ -85,7 +85,7 @@ export function SearchBox() {
           onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
           placeholder="ابحث: السفر، المطر، الهم، الكرب..."
           autoComplete="off"
-          className="h-14 w-full bg-transparent text-lg outline-none placeholder:text-muted-foreground/80"
+          className="h-14 w-full bg-transparent text-lg outline-none placeholder:text-muted-foreground/80 [&::-webkit-search-cancel-button]:appearance-none"
         />
         {state.status === "loading" && <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden="true" />}
         {query && (
