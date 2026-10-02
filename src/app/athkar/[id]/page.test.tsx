@@ -44,6 +44,23 @@ describe("situation page", () => {
     expect(next.textContent).toContain(situation.next!.title);
   });
 
+  it("balances a wrapping title across its lines", async () => {
+    // The reading face is wider than Amiri, so more titles wrap at 360px; balance
+    // keeps a lone word from sitting on the last line.
+    const h1 = (await renderSituation(2)).querySelector("h1")!;
+    expect(h1.textContent).toBe(situation.category.title);
+    expect(h1.classList).toContain("text-balance");
+  });
+
+  it("gives the previous and next titles their own line box, so their line height applies", async () => {
+    const nav = (await renderSituation(2)).querySelector('nav[aria-label="التنقل بين المواقف"]')!;
+    const spans = [...nav.querySelectorAll("a span")];
+    for (const text of [situation.prev!.title, situation.next!.title]) {
+      const title = spans.find((s) => s.textContent === text);
+      expect([...(title?.classList ?? [])], text).toEqual(expect.arrayContaining(["block", "leading-[1.45]"]));
+    }
+  });
+
   it("lists the other situations of the same section, not itself", async () => {
     const related = (await renderSituation(2)).querySelector('section[aria-labelledby="same-section"]')!;
     const hrefs = [...related.querySelectorAll("a")].map(hrefOf);

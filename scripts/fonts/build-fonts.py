@@ -1,47 +1,88 @@
 """Builds the self-hosted woff2 fonts in src/fonts from pinned google/fonts sources.
 
 Usage: python scripts/fonts/build-fonts.py <dir-with-ttf-sources>
-Requires: fonttools[woff] (fonttools + brotli).
+Requires: Python 3.11+ and the exact versions in scripts/fonts/requirements.txt
+  (pip install -r scripts/fonts/requirements.txt): fonttools, brotli, uharfbuzz.
+  With those versions a rebuild gives the committed bytes. uharfbuzz is not
+  optional: without it fontTools serializes GSUB/GPOS differently, so the build
+  stops if it cannot be imported.
 
 Sources: https://github.com/google/fonts at commit 9710da1eacb3be272583c3224dcb70f9da6eadbb
   ofl/baloobhaijaan2/BalooBhaijaan2[wght].ttf
-  ofl/amiri/Amiri-{Regular,Bold}.ttf
+  ofl/notonaskharabic/NotoNaskhArabic[wght].ttf (instanced at wght 400 and 700)
   ofl/ibmplexsansarabic/IBMPlexSansArabic-{Regular,Medium,Bold}.ttf
-Each font is subset to src/fonts/unicode-ranges.json, keeping every OpenType
-layout feature so Arabic shaping, marks and ligatures are unchanged.
+The build checks each source against INPUT_SHA256 before it writes anything, so
+a different upstream revision (with, say, another copyright year or Reserved
+Font Name line than the vendored OFL texts) cannot slip in.
+Each font is subset to its family's ranges in src/fonts/unicode-ranges.json (the
+shared "core" plus the family's "extra" ranges, if any), keeping every OpenType
+layout feature so Arabic shaping, marks and ligatures are unchanged. The build
+then writes src/fonts/cmap.json: the SHA-256 of each shipped file and the code
+points it maps. src/lib/athkar/font-coverage.test.ts checks every character the
+site renders against those code points, and the files against those hashes.
 
-IBM Plex Sans Arabic is licensed with Reserved Font Name "Plex". A subset is a
-Modified Version under the OFL, so its user-facing names (name IDs 1, 3, 4, 6,
-16, 18, 21) are renamed to "Athkar Sans Arabic". Copyright, trademark and
-license records are kept unchanged. The build fails if a reserved name remains.
+Noto Naskh Arabic ships as one variable font; the build instances it at wght 400
+and 700, so the reading face stays two static files (the site uses only those
+weights), and drops the instances' variations PostScript prefix (name ID 25).
+IBM Plex Sans Arabic is licensed with Reserved Font Name "Plex", and "Noto" is a
+Google trademark. A subset is a Modified Version under the OFL, so the user-facing
+names (name IDs 1, 3, 4, 6, 16, 18, 21, 25) are renamed to "Athkar Sans Arabic"
+and "Athkar Naskh". A unique ID (name ID 3) that still carries a protected name
+after that is rewritten as "<version>;<PostScript name>". Copyright, trademark,
+manufacturer and license records are kept unchanged. The build fails if a
+protected name remains in a user-facing name.
 """
 
+import hashlib
 import json
 import sys
 from pathlib import Path
 
 from fontTools import subset
 from fontTools.ttLib import TTFont
+from fontTools.varLib import instancer
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "src" / "fonts"
-FONTS = {
-    "BalooBhaijaan2[wght].ttf": "BalooBhaijaan2-Variable.woff2",
-    "Amiri-Regular.ttf": "Amiri-Regular.woff2",
-    "Amiri-Bold.ttf": "Amiri-Bold.woff2",
-    "IBMPlexSansArabic-Regular.ttf": "AthkarSansArabic-Regular.woff2",
-    "IBMPlexSansArabic-Medium.ttf": "AthkarSansArabic-Medium.woff2",
-    "IBMPlexSansArabic-Bold.ttf": "AthkarSansArabic-Bold.woff2",
+# (source, shipped file, wght to instance a variable source at, or None to ship it as is)
+FONTS = [
+    ("BalooBhaijaan2[wght].ttf", "BalooBhaijaan2-Variable.woff2", None),
+    ("NotoNaskhArabic[wght].ttf", "AthkarNaskh-Regular.woff2", 400),
+    ("NotoNaskhArabic[wght].ttf", "AthkarNaskh-Bold.woff2", 700),
+    ("IBMPlexSansArabic-Regular.ttf", "AthkarSansArabic-Regular.woff2", None),
+    ("IBMPlexSansArabic-Medium.ttf", "AthkarSansArabic-Medium.woff2", None),
+    ("IBMPlexSansArabic-Bold.ttf", "AthkarSansArabic-Bold.woff2", None),
+]
+# SHA-256 of each source at the pinned google/fonts commit.
+INPUT_SHA256 = {
+    "BalooBhaijaan2[wght].ttf": "3e9f07fbc796c0ddcb3e6e0aa26f9c86741d9f5b7f5cb72f4ed3c06e55a19336",
+    "NotoNaskhArabic[wght].ttf": "67b5a525a661b607971fbd3f96a81b89d3a768e74534fca84f18ac97e6fab72f",
+    "IBMPlexSansArabic-Regular.ttf": "6f611412270a132bbac838da9259d4c68569b4175f3b3b8fa3fa36a30b56dab9",
+    "IBMPlexSansArabic-Medium.ttf": "b8363ab9f733dfa4f8e96b8b2102c24b5cf4110fb96d1d3d9a9412f6fb49cf74",
+    "IBMPlexSansArabic-Bold.ttf": "691e0c891a38637ae6bbdb69700f8042cb0724a137bee615068ffdb92244f61f",
 }
 
-# OFL Reserved Font Names that must not appear in Modified Versions' names.
-RESERVED = {"IBMPlexSansArabic": "Plex"}
-RENAMES = [("IBM Plex Sans Arabic", "Athkar Sans Arabic"), ("IBMPlexSansArabic", "AthkarSansArabic")]
-NAME_IDS = {1, 3, 4, 6, 16, 18, 21}
+# Names (by source file prefix) that must not appear in our Modified Versions' names:
+# OFL Reserved Font Names, and the Noto trademark.
+RESERVED = {"IBMPlexSansArabic": ["Plex"], "NotoNaskhArabic": ["Noto"]}
+RENAMES = [
+    ("IBM Plex Sans Arabic", "Athkar Sans Arabic"),
+    ("IBMPlexSansArabic", "AthkarSansArabic"),
+    ("Noto Naskh Arabic", "Athkar Naskh"),
+    ("NotoNaskhArabic", "AthkarNaskh"),
+]
+NAME_IDS = {1, 3, 4, 6, 16, 18, 21, 25}
+UNIQUE_ID = 3
+POSTSCRIPT_NAME = 6
+VARIATIONS_PREFIX = 25
+
+CMAP_COMMENT = (
+    "Generated by scripts/fonts/build-fonts.py; do not edit. For each shipped font: its SHA-256 "
+    "and the code points it maps. src/lib/athkar/font-coverage.test.ts checks the site's text against them."
+)
 
 
-def codepoints() -> set[int]:
-    ranges = json.loads((OUT / "unicode-ranges.json").read_text(encoding="utf-8"))["ranges"]
+def parse_ranges(ranges: list[str]) -> set[int]:
     points: set[int] = set()
     for r in ranges:
         lo, _, hi = r.removeprefix("U+").partition("-")
@@ -49,22 +90,79 @@ def codepoints() -> set[int]:
     return points
 
 
-def rename_reserved(font: TTFont, reserved: str) -> None:
+def format_ranges(points: set[int]) -> list[str]:
+    """Code points as sorted "U+XXXX" / "U+XXXX-YYYY" ranges."""
+    out: list[str] = []
+    ordered = sorted(points)
+    start = prev = ordered[0]
+    for cp in [*ordered[1:], None]:
+        if cp is not None and cp == prev + 1:
+            prev = cp
+            continue
+        out.append(f"U+{start:04X}" if start == prev else f"U+{start:04X}-{prev:04X}")
+        if cp is not None:
+            start = prev = cp
+    return out
+
+
+def family_codepoints(family: str) -> set[int]:
+    """The shared core ranges plus this family's extra ranges."""
+    spec = json.loads((OUT / "unicode-ranges.json").read_text(encoding="utf-8"))
+    return parse_ranges(spec["core"]) | parse_ranges(spec["extra"].get(family, []))
+
+
+def rename_reserved(font: TTFont, reserved: list[str]) -> None:
     """Rename user-facing name records of a Modified Version; keep legal records."""
-    for record in font["name"].names:
+    names = font["name"]
+    for record in names.names:
         if record.nameID not in NAME_IDS:
             continue
         text = record.toUnicode()
         for old, new in RENAMES:
             text = text.replace(old, new)
-        if reserved in text:
-            raise SystemExit(f"reserved name {reserved!r} left in name ID {record.nameID}: {text!r}")
         record.string = text
+    unique_id = f"{font['head'].fontRevision:.3f};{names.getDebugName(POSTSCRIPT_NAME)}"
+    for record in names.names:
+        if record.nameID == UNIQUE_ID and any(word in record.toUnicode() for word in reserved):
+            record.string = unique_id
+    for record in names.names:
+        text = record.toUnicode()
+        if record.nameID in NAME_IDS and any(word in text for word in reserved):
+            raise SystemExit(f"reserved name {reserved!r} left in name ID {record.nameID}: {text!r}")
+
+
+def require_repacker() -> None:
+    """Stop unless fontTools can use HarfBuzz's repacker, which the committed bytes depend on."""
+    try:
+        import uharfbuzz  # noqa: F401
+    except ImportError:
+        raise SystemExit(
+            "uharfbuzz is not installed, so fontTools would lay out GSUB/GPOS differently and every "
+            "woff2 would change. Install the pinned versions: "
+            "pip install -r scripts/fonts/requirements.txt"
+        ) from None
+
+
+def check_inputs(src: Path) -> None:
+    """Stop before writing anything unless every source matches the pinned upstream file."""
+    for ttf, expected in INPUT_SHA256.items():
+        path = src / ttf
+        if not path.is_file():
+            raise SystemExit(f"missing source {path}")
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != expected:
+            raise SystemExit(
+                f"{ttf} differs from google/fonts 9710da1 (sha256 {actual}, expected {expected}); "
+                "rebuild from the pinned sources or update INPUT_SHA256 and the license files together"
+            )
 
 
 def main() -> None:
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: python scripts/fonts/build-fonts.py <dir-with-ttf-sources>")
+    require_repacker()
     src = Path(sys.argv[1])
-    keep = codepoints()
+    check_inputs(src)
     options = subset.Options()
     options.flavor = "woff2"
     options.layout_features = ["*"]
@@ -72,8 +170,15 @@ def main() -> None:
     options.name_languages = ["*"]
     options.notdef_outline = True
     options.glyph_names = False
-    for ttf, woff2 in FONTS.items():
-        font = TTFont(src / ttf)
+    shipped: dict[str, dict[str, object]] = {}
+    for ttf, woff2, wght in FONTS:
+        # Keep upstream head.modified so a rebuild of the same sources gives the same bytes.
+        font = TTFont(src / ttf, recalcTimestamp=False)
+        if wght is not None:
+            font = instancer.instantiateVariableFont(font, {"wght": wght}, updateFontNames=True)
+            # A static instance has no variations, so its variations PostScript prefix goes too.
+            font["name"].removeNames(nameID=VARIATIONS_PREFIX)
+        keep = family_codepoints(woff2.split("-")[0])
         subsetter = subset.Subsetter(options)
         subsetter.populate(unicodes=sorted(keep & set(font.getBestCmap())))
         subsetter.subset(font)
@@ -81,8 +186,15 @@ def main() -> None:
             if ttf.startswith(prefix):
                 rename_reserved(font, reserved)
         font.flavor = "woff2"
-        font.save(OUT / woff2)
-        print(f"{woff2:36} {(OUT / woff2).stat().st_size // 1024:4} KB")
+        path = OUT / woff2
+        font.save(path)
+        shipped[woff2] = {
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "cmap": format_ranges(set(font.getBestCmap())),
+        }
+        print(f"{woff2:36} {path.stat().st_size / 1024:6.1f} KB")
+    cmap = {"_comment": CMAP_COMMENT, "fonts": dict(sorted(shipped.items()))}
+    (OUT / "cmap.json").write_text(json.dumps(cmap, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

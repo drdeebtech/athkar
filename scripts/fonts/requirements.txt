@@ -1,0 +1,6 @@
+# Exact versions that rebuild the committed src/fonts/*.woff2 byte for byte.
+# uharfbuzz is required: fontTools lays out GSUB/GPOS with HarfBuzz's repacker when
+# it can import it, and with its own serializer (different bytes) when it cannot.
+fonttools==4.66.1
+brotli==1.2.0
+uharfbuzz==0.56.2

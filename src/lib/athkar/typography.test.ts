@@ -1,0 +1,119 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
+import tailwind from "@tailwindcss/postcss";
+import postcss, { type Rule } from "postcss";
+import { describe, expect, it } from "vitest";
+import { FONT_STEPS } from "./settings";
+
+const SRC = join(__dirname, "../..");
+
+/** Rendered page and component sources (.tsx, tests excluded), relative to src/. */
+function components(dir = SRC): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return components(path);
+    return name.endsWith(".tsx") && !name.endsWith(".test.tsx") ? [relative(SRC, path)] : [];
+  });
+}
+
+const FILES = components();
+const read = (file: string) => readFileSync(join(SRC, file), "utf8");
+
+/** Every non-test .ts/.tsx source under src/, relative to src/. */
+function sources(dir = SRC): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sources(path);
+    return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [relative(SRC, path)] : [];
+  });
+}
+
+/** Source without // and /* *\/ comments, so a comment that names a file or class does not count. */
+const code = (file: string) => read(file).replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
+
+/** The files that import `file`, from an "@/…" or a relative specifier. */
+function importersOf(file: string): string[] {
+  const target = file.replace(/\.tsx?$/, "");
+  return FILES.filter((f) =>
+    [...read(f).matchAll(/from\s+["']([^"']+)["']/g)].some(([, spec]) => {
+      if (spec.startsWith("@/")) return spec.slice(2) === target;
+      return spec.startsWith(".") && relative(SRC, resolve(SRC, dirname(f), spec)) === target;
+    }),
+  );
+}
+
+/** The files under app/ that render `file`, following imports up from components. */
+function routesRendering(file: string, seen = new Set<string>()): string[] {
+  if (file.startsWith("app/")) return [file];
+  if (seen.has(file)) return [];
+  seen.add(file);
+  return importersOf(file).flatMap((f) => routesRendering(f, seen));
+}
+
+/**
+ * Font sizes below 14px: text-xs (also through @apply), an arbitrary text-[…] size,
+ * a CSS font-size or a React fontSize under 0.875rem.
+ */
+function smallText(code: string): string[] {
+  const found = [...code.matchAll(/\btext-xs\b/g)].map((m) => m[0]);
+  const sizes = /\btext-\[(\d*\.?\d+)(rem|px)\]|font-size:\s*(\d*\.?\d+)(rem|px)|fontSize:\s*["'](\d*\.?\d+)(rem|px)["']/g;
+  for (const m of code.matchAll(sizes)) {
+    const [value, unit] = [m[1] ?? m[3] ?? m[5], m[2] ?? m[4] ?? m[6]];
+    if (Number(value) * (unit === "rem" ? 16 : 1) < 14) found.push(m[0]);
+  }
+  return found;
+}
+
+describe("phone typography", () => {
+  it("sets no text below 14px in any source or in globals.css", () => {
+    const offending = [...sources(), "app/globals.css"].flatMap((f) => smallText(read(f)).map((token) => `${f}: ${token}`));
+    expect(offending).toEqual([]);
+  });
+
+  it("offers no reading size below 14px", () => {
+    for (const size of FONT_STEPS) expect(Number.parseFloat(size) * 16, size).toBeGreaterThanOrEqual(14);
+  });
+
+  it("loads the reading face only in the situation layout, so other pages' HTML and CSS never reference it", () => {
+    // Pages that prefetch a situation link (home quick links, section grid, search
+    // results) still fetch the files after load, from that route's font hints.
+    const loaders = sources().filter((f) => /AthkarNaskh-\w+\.woff2|["']--font-naskh["']/.test(code(f)));
+    expect(loaders).toEqual(["app/athkar/[id]/layout.tsx"]);
+    expect(read("app/athkar/[id]/layout.tsx")).toContain('variable: "--font-naskh"');
+  });
+
+  it("compiles .zekr-text and .font-zekr to the reading face, never to the :root-level --font-zekr", async () => {
+    // --font-naskh is defined on the situation layout's wrapper, not on <html>. Only
+    // "@theme inline" makes Tailwind write var(--font-naskh) into these rules; with a
+    // plain "@theme" they read var(--font-zekr), declared on :root where --font-naskh
+    // is undefined, and the adhkar and the title silently fall back to the UI face.
+    const from = join(SRC, "app/globals.css");
+    const { root } = await postcss([tailwind({ base: join(SRC, "..") })]).process(readFileSync(from, "utf8"), { from });
+    const families: Record<string, string[]> = { "zekr-text": [], "font-zekr": [] };
+    const themeVarUsers: string[] = [];
+    root.walkDecls((decl) => {
+      const rule = decl.parent?.type === "rule" ? (decl.parent as Rule).selector : String(decl.parent?.type);
+      if (decl.value.includes("var(--font-zekr)")) themeVarUsers.push(`${rule} { ${decl} }`);
+      if (decl.prop !== "font-family") return;
+      for (const cls of Object.keys(families)) {
+        if (new RegExp(`\\.${cls}(?![\\w-])`).test(rule)) families[cls].push(decl.value);
+      }
+    });
+    for (const [cls, values] of Object.entries(families)) {
+      expect(values, `.${cls} sets no font-family`).not.toEqual([]);
+      for (const value of values) expect(value, `.${cls}`).toMatch(/^var\(--font-naskh\)/);
+    }
+    expect(themeVarUsers).toEqual([]);
+  }, 30_000);
+
+  it("uses the reading face only on situation pages; titles elsewhere are in the UI face", () => {
+    const users = FILES.filter((f) => /\bfont-zekr\b|["'`\s]zekr-text\b/.test(read(f)));
+    expect(users).toContain("app/athkar/[id]/page.tsx");
+    expect(users).toContain("components/athkar/zekr-text.tsx");
+    for (const file of users) {
+      const routes = routesRendering(file);
+      expect(routes, file).not.toEqual([]);
+      expect(routes.filter((route) => !route.startsWith("app/athkar/[id]/")), file).toEqual([]);
+    }
+  });
+});

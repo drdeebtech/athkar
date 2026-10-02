@@ -124,9 +124,9 @@ export function SearchBox() {
           <ul className="max-h-96 overflow-y-auto p-2">
             {results.map(({ category, titleMatch, textMatches }) => (
               <li key={category.id}>
-                <Link href={`/athkar/${category.id}`} className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3 hover:bg-muted">
-                  <span className="font-zekr text-lg font-bold">{category.title}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                <Link href={`/athkar/${category.id}`} className="flex flex-col items-start gap-0.5 rounded-2xl px-4 py-3 hover:bg-muted">
+                  <span className="font-sans text-base leading-[1.45] font-bold">{category.title}</span>
+                  <span className="text-sm text-muted-foreground">
                     {titleMatch ? athkarCount(category.items.length) : `${resultsCount(textMatches)} في النص`}
                   </span>
                 </Link>

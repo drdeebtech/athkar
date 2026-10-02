@@ -357,3 +357,30 @@ describe("ZekrList taps made before React re-renders", () => {
     expect(announcement()).toBe("تمّ الذكر 1");
   });
 });
+
+describe("ZekrList marked text", () => {
+  it("renders hadith and Quran in their own spans, without the source markers", () => {
+    const { card } = renderList([
+      { id: "4-1", text: "قال ((مَنْ قَالَ سُبْحَانَ اللهِ)) ثم قرأ ﴿قُلْ هُوَ اللَّهُ أَحَدٌ﴾ ثلاثاً", count: 1 },
+    ]);
+    const spans = (selector: string) => [...card("4-1").querySelectorAll(selector)].map((s) => s.textContent);
+    // The (( )) and ﴿ ﴾ come back from CSS ::before/::after on these classes, so the
+    // class is what gives hadith a cue other than colour and keeps Quran framed.
+    expect(spans("span.seg-hadith")).toEqual(["مَنْ قَالَ سُبْحَانَ اللهِ"]);
+    expect(spans("span.seg-quran")).toEqual(["قُلْ هُوَ اللَّهُ أَحَدٌ"]);
+  });
+});
+
+describe("ZekrList card padding", () => {
+  it("lines the header, the zekr text and the buttons up on phones", () => {
+    // At 360px every pixel of measure counts: with 20px instead of 16px, the first line
+    // of Ayat al-Kursi on the morning and evening pages missed one line by 0.6px.
+    const { card } = renderList([{ id: "4-1", text: "سُبْحَانَ اللهِ", count: 1 }]);
+    const parts = {
+      header: card("4-1").querySelector("header"),
+      text: card("4-1").querySelector(".zekr-text")?.parentElement,
+      footer: card("4-1").querySelector("footer"),
+    };
+    for (const [part, el] of Object.entries(parts)) expect([...(el?.classList ?? [])], part).toContain("px-4");
+  });
+});

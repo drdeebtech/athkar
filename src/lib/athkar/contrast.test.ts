@@ -47,8 +47,16 @@ const TEXT_PAIRS: [string, string][] = [
   ["destructive", "card"],
   ["muted-foreground", "card"],
   ["muted-foreground", "muted"],
+  ["muted-foreground", "secondary"],
   ["quran", "card"],
   ["hadith", "card"],
+];
+/** Secondary text (labels, sources, counts) on the surfaces it sits on: AAA, for phones in daylight. */
+const AAA_TEXT_PAIRS: [string, string][] = [
+  ["muted-foreground", "card"],
+  ["muted-foreground", "background"],
+  // The virtue/source panel and done cards (clay-inset, --clay: var(--muted)).
+  ["muted-foreground", "muted"],
 ];
 const RING_SURFACES = ["background", "card", "muted", "secondary"];
 
@@ -57,6 +65,10 @@ describe.each([":root", ".dark"])("%s colour contrast (WCAG 2.2 AA)", (selector)
 
   it.each(TEXT_PAIRS)("%s text on %s is at least 4.5:1", (fg, bg) => {
     expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(AAA_TEXT_PAIRS)("%s text on %s is at least 7:1", (fg, bg) => {
+    expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(7);
   });
 
   it.each(RING_SURFACES)("focus ring on %s is at least 3:1", (bg) => {
@@ -71,6 +83,23 @@ function sources(dir: string): string[] {
     return /\.(tsx|css)$/.test(name) ? [path] : [];
   });
 }
+
+describe("hadith is not marked by colour alone (WCAG 1.4.1)", () => {
+  // Hadith against plain text is about 2:1 in light and 1.35:1 in dark, so colour
+  // alone does not set it apart. The brackets have empty alternative text, so
+  // screen readers do not read them, and copied or shared text is unchanged.
+  it.each([
+    ["before", "(("],
+    ["after", "))"],
+  ])("draws %s each hadith span %s, hidden from screen readers", (side, marks) => {
+    const rule = new RegExp(`\\.seg-hadith::${side}\\s*\\{([^}]*)\\}`).exec(CSS)?.[1] ?? "";
+    const [plain, withAlt] = [rule.indexOf(`content: "${marks}";`), rule.indexOf(`content: "${marks}" / "";`)];
+    expect(plain).toBeGreaterThanOrEqual(0);
+    // The alt-text form must come last: browsers that support it override the plain
+    // fallback, and the rest drop it as invalid. Reversed, screen readers read the marks.
+    expect(withAlt).toBeGreaterThan(plain);
+  });
+});
 
 describe("no faded focus rings or placeholder text", () => {
   it("never lowers the opacity of the ring or placeholder colours", () => {

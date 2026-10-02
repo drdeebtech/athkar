@@ -26,11 +26,21 @@ type is always set in code with Baloo Bhaijaan 2 so letters join correctly).
 
 - Display: Baloo Bhaijaan 2 (variable, 400–800)
 - Interface: Athkar Sans Arabic, our renamed subset of IBM Plex Sans Arabic (400/500/700)
-- Adhkar text: Amiri (400/700)
+- Adhkar text and the situation page title: Athkar Naskh, our renamed subset of Noto Naskh Arabic (400/700)
 
 Fonts are self-hosted from `src/fonts/` (no build-time requests to Google
-Fonts). Rebuild with `python scripts/fonts/build-fonts.py <ttf-dir>` using the
-pinned google/fonts sources listed in `THIRD_PARTY_NOTICES.md`.
+Fonts). Rebuild with Python 3.11+ and the pinned tools, from the pinned
+google/fonts sources listed in `THIRD_PARTY_NOTICES.md`:
+
+```sh
+pip install -r scripts/fonts/requirements.txt   # fonttools, brotli, uharfbuzz, exact versions
+python scripts/fonts/build-fonts.py <ttf-dir>
+```
+
+With those versions the rebuild gives the committed bytes (`git status src/fonts`
+stays clean). The script stops if uharfbuzz is missing, since fontTools then
+writes GSUB/GPOS differently, and if any source TTF differs from the pinned
+upstream file (`INPUT_SHA256`).
 
 ## Files
 

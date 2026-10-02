@@ -8,7 +8,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-baloo), var(--font-ui), sans-serif;
-  --font-zekr: var(--font-amiri), "Traditional Arabic", serif;
+  --font-zekr: var(--font-naskh), "Athkar Naskh Fallback Times", "Athkar Naskh Fallback Noto", "Traditional Arabic", serif;
   --font-heading: var(--font-display);
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -38,6 +38,50 @@
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+/* ── Reading face fallbacks ───────────────────────────────────────────── */
+/* Drawn until Athkar Naskh arrives: Times New Roman on iPhone, Mac and Windows,
+   Noto Naskh Arabic on Android (the font Athkar Naskh is built from, so it
+   needs no scaling). Times is scaled to Athkar Naskh's width, so the adhkar keep
+   their line breaks, and each gets its ascent and descent, so the lines do not
+   move when it swaps in. Measured values and their source:
+   src/lib/athkar/font-fallback.test.ts. */
+@font-face {
+  font-family: "Athkar Naskh Fallback Times";
+  font-weight: 400;
+  src: local("Times New Roman"), local("TimesNewRomanPSMT");
+  size-adjust: 109.4%;
+  ascent-override: 97.71%;
+  descent-override: 57.95%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Athkar Naskh Fallback Times";
+  font-weight: 700;
+  src: local("Times New Roman Bold"), local("TimesNewRomanPS-BoldMT");
+  size-adjust: 111.9%;
+  ascent-override: 95.53%;
+  descent-override: 56.66%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Athkar Naskh Fallback Noto";
+  font-weight: 400;
+  src: local("Noto Naskh Arabic Regular"), local("NotoNaskhArabic-Regular"), local("Noto Naskh Arabic");
+  size-adjust: 100%;
+  ascent-override: 106.9%;
+  descent-override: 63.4%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Athkar Naskh Fallback Noto";
+  font-weight: 700;
+  src: local("Noto Naskh Arabic Bold"), local("NotoNaskhArabic-Bold");
+  size-adjust: 100%;
+  ascent-override: 106.9%;
+  descent-override: 63.4%;
+  line-gap-override: 0%;
+}
+
 /* ── Palette: warm sand clay, sage glaze, apricot accent ───────────────── */
 :root {
   --background: oklch(0.955 0.022 80);
@@ -51,7 +95,7 @@
   --secondary: oklch(0.915 0.045 160);
   --secondary-foreground: oklch(0.33 0.065 165);
   --muted: oklch(0.925 0.022 80);
-  --muted-foreground: oklch(0.47 0.035 165);
+  --muted-foreground: oklch(0.4 0.035 165);
   --accent: oklch(0.79 0.12 58);
   --accent-foreground: oklch(0.3 0.07 45);
   --destructive: oklch(0.54 0.17 28);
@@ -90,7 +134,7 @@
   --secondary: oklch(0.33 0.035 170);
   --secondary-foreground: oklch(0.9 0.03 160);
   --muted: oklch(0.25 0.022 175);
-  --muted-foreground: oklch(0.76 0.025 160);
+  --muted-foreground: oklch(0.8 0.025 160);
   --accent: oklch(0.77 0.11 60);
   --accent-foreground: oklch(0.24 0.05 50);
   --destructive: oklch(0.7 0.17 25);
@@ -189,12 +233,14 @@
 
 @layer components {
   .zekr-text {
-    font-family: var(--font-zekr);
+    @apply font-zekr;
     font-size: var(--zekr-size);
     line-height: 2.05;
     text-align: start;
     white-space: pre-line;
     overflow-wrap: anywhere;
+    /* Avoids one-word last lines; browsers without support ignore it. */
+    text-wrap: pretty;
   }
   @media (min-width: 640px) {
     .zekr-text {
@@ -209,6 +255,17 @@
   .seg-quran::before { content: "﴿"; }
   .seg-quran::after { content: "﴾"; }
   .seg-hadith { color: var(--hadith); }
+  /* Hadith also gets the source's (( )) so it is not marked by colour alone. The
+     empty alternative text keeps screen readers quiet; the first declaration is
+     for browsers without alternative text. */
+  .seg-hadith::before {
+    content: "((";
+    content: "((" / "";
+  }
+  .seg-hadith::after {
+    content: "))";
+    content: "))" / "";
+  }
 
   /* Staggered entrance, capped so long lists never wait. */
   .rise {

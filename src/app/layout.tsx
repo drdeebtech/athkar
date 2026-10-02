@@ -9,10 +9,13 @@ import { PRE_PAINT_SCRIPT } from "@/lib/athkar/settings";
 import "./globals.css";
 
 // Fonts are self-hosted (src/fonts, OFL-licensed, built by scripts/fonts/build-fonts.py)
-// so builds never fetch from Google Fonts. They are subset to the Arabic + Latin
-// ranges in src/fonts/unicode-ranges.json; font-coverage.test.ts guards that.
-// "Athkar Sans Arabic" is our subset of IBM Plex Sans Arabic, renamed because
-// "Plex" is an OFL Reserved Font Name (see THIRD_PARTY_NOTICES.md).
+// so builds never fetch from Google Fonts. Each family is subset to its own ranges
+// in src/fonts/unicode-ranges.json, and font-coverage.test.ts checks every character
+// the site renders against the code points each file maps (src/fonts/cmap.json).
+// "Athkar Sans Arabic" is our subset of IBM Plex Sans Arabic and "Athkar Naskh" our
+// subset of Noto Naskh Arabic, renamed because "Plex" is an OFL Reserved Font Name
+// and "Noto" a Google trademark (see THIRD_PARTY_NOTICES.md). Athkar Naskh, the reading
+// face, is declared in app/athkar/[id]/layout.tsx, the only route that uses it.
 
 const uiFont = localFont({
   variable: "--font-ui",
@@ -28,19 +31,6 @@ const displayFont = localFont({
   variable: "--font-baloo",
   src: [{ path: "../fonts/BalooBhaijaan2-Variable.woff2", weight: "400 800", style: "normal" }],
   display: "swap",
-});
-
-// Amiri is the largest family and mostly sits below the first screen, so it is
-// not preloaded; a metric-matched serif fallback keeps layout shift low.
-const zekrFont = localFont({
-  variable: "--font-amiri",
-  src: [
-    { path: "../fonts/Amiri-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/Amiri-Bold.woff2", weight: "700", style: "normal" },
-  ],
-  display: "swap",
-  preload: false,
-  adjustFontFallback: "Times New Roman",
 });
 
 export const metadata: Metadata = {
@@ -71,7 +61,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl" className={`${uiFont.variable} ${displayFont.variable} ${zekrFont.variable}`} suppressHydrationWarning>
+    <html lang="ar" dir="rtl" className={`${uiFont.variable} ${displayFont.variable}`} suppressHydrationWarning>
       <head>
         {/* Runs synchronously before first paint; PRE_PAINT_SCRIPT is a build-time constant. */}
         <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_SCRIPT }} />

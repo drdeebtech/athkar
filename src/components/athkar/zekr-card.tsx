@@ -43,18 +43,18 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
       // dropped secondary text below WCAG AA contrast.
       className={cn("clay scroll-mt-32 [--clay-r:2rem]", done && "[--clay:var(--muted)]")}
     >
-      <header className="flex items-center justify-between px-5 pt-4 text-sm text-muted-foreground sm:px-7">
+      <header className="flex items-center justify-between px-4 pt-4 text-sm text-muted-foreground sm:px-7">
         <span className="font-display">
           الذكر <span className="text-base font-bold text-foreground">{index + 1}</span> من {total}
         </span>
-        <span className="clay-sm glaze px-3 py-1 text-xs font-bold [--hue:60]">{timesCount(counter.target)}</span>
+        <span className="clay-sm glaze px-3 py-1 text-sm font-bold [--hue:60]">{timesCount(counter.target)}</span>
       </header>
 
-      <div className="px-5 pt-3 pb-5 sm:px-7">
+      <div className="px-4 pt-3 pb-5 sm:px-7">
         <ZekrText text={zekr.text} />
 
         {(zekr.virtue || zekr.reference) && (
-          <details open={expanded} className="group clay-inset mt-4 text-sm [--clay-r:1.25rem]">
+          <details open={expanded} className="group clay-inset mt-4 text-base [--clay-r:1.25rem]">
             <summary className="cursor-pointer list-none px-4 py-3 font-medium text-muted-foreground marker:hidden hover:text-foreground">
               <span className="group-open:hidden">عرض الفضل والمصدر</span>
               <span className="hidden group-open:inline">إخفاء الفضل والمصدر</span>
@@ -77,7 +77,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
         )}
       </div>
 
-      <footer className="flex items-center gap-3 px-4 pb-5 sm:px-6">
+      <footer className="flex flex-wrap items-center gap-3 px-4 pb-5 sm:px-6">
         <button
           type="button"
           data-counter
@@ -88,7 +88,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
           aria-label={done ? "تم هذا الذكر" : `اضغط للعد، المتبقي ${counter.remaining}`}
           style={{ "--hue": done ? 150 : 60 } as React.CSSProperties}
           className={cn(
-            "clay glaze flex h-16 flex-1 items-center justify-center gap-3 [--clay-r:9999px] select-none focus-visible:ring-3 focus-visible:ring-ring",
+            "clay glaze flex h-16 min-w-28 flex-1 items-center justify-center gap-3 [--clay-r:9999px] select-none focus-visible:ring-3 focus-visible:ring-ring",
             // Alternate the animation name so the squish replays on every tap without
             // remounting the button (a remount would drop keyboard and screen-reader focus).
             done ? "cursor-default" : cn("clay-press", counter.remaining % 2 ? "squish" : "squish-alt"),
@@ -102,7 +102,7 @@ export function ZekrCard({ zekr, index, total, title, counter, onTap, onReset, e
           ) : (
             <>
               <span className="font-display text-3xl leading-none font-extrabold tabular-nums">{counter.remaining}</span>
-              <span className="font-display text-base font-bold opacity-80">اضغط للعدّ</span>
+              <span className="font-display text-base font-bold">اضغط للعدّ</span>
             </>
           )}
         </button>
